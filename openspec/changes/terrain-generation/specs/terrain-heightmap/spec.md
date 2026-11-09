@@ -72,3 +72,30 @@ heightmap by linear scaling of its 16-bit values.
 - **WHEN** a run finishes
 - **THEN** `preview.png` has the heightmap's width and height, bit depth 8, and each pixel equals
   the heightmap pixel divided by 257, rounded to the nearest integer
+
+### Requirement: Raw 16-bit heightmap
+The generator SHALL also write the heightmap as a headerless raw file of `size` x `size`
+little-endian unsigned 16-bit values in row-major order, top row first, for engines that import
+raw heightmaps.
+
+#### Scenario: Raw matches PNG
+- **WHEN** a run finishes
+- **THEN** `heightmap.r16` is exactly `size` x `size` x 2 bytes and every value equals the
+  corresponding pixel of `heightmap.png`
+
+### Requirement: Vertical scale
+The generator SHALL take a height range in metres (`--height-range`, default 400) that states how
+many metres the full 16-bit range spans, so a consumer can place 0 at 0 m and 65535 at the range.
+The value SHALL be recorded in the metadata and SHALL NOT change any heightmap pixel.
+
+#### Scenario: Recorded in metadata
+- **WHEN** the user passes `--height-range 800`
+- **THEN** the metadata `params` records `height_range_m` as 800
+
+#### Scenario: Pixels unchanged
+- **WHEN** two runs differ only in `--height-range`
+- **THEN** their `heightmap.png` and `heightmap.r16` files are byte-identical
+
+#### Scenario: Invalid range
+- **WHEN** the user passes a `--height-range` that is zero or negative
+- **THEN** it exits with a non-zero status and writes no output files

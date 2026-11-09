@@ -73,7 +73,8 @@ using fixed file names.
 
 #### Scenario: Default files
 - **WHEN** a run finishes
-- **THEN** the output directory contains `heightmap.png`, `preview.png` and `metadata.json`
+- **THEN** the output directory contains `heightmap.png`, `heightmap.r16`, `preview.png` and
+  `metadata.json`
 
 #### Scenario: Directory missing
 - **WHEN** `--out` names a directory that does not exist
