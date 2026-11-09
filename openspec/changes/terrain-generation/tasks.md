@@ -2,9 +2,9 @@
 
 ## 1. Seeds, parameters and PNG writer
 
-- [ ] 1.1 Add `seeds.py` with `step_rng(master_seed, step_name)`; verify tests: same inputs give the same sequence, different step names give different sequences, call order does not matter
-- [ ] 1.2 Add `params.py` (`Params` dataclass with defaults, validation: seed int >= 0, size 64..8192, octaves >= 1, erosion iterations >= 0, `to_dict`); verify tests cover every rejected value and the default size 1024
-- [ ] 1.3 Add `png.py` (`write_png16`, `write_png8`, and a small reader used by tests); verify a round-trip test returns identical pixels, header reports colour type 0 and the right bit depth, and two writes of the same array are byte-identical
+- [x] 1.1 Add `seeds.py` with `step_rng(master_seed, step_name)`; verify tests: same inputs give the same sequence, different step names give different sequences, call order does not matter
+- [x] 1.2 Add `params.py` (`Params` dataclass with defaults, validation: seed int >= 0, size 64..8192, octaves >= 1, erosion iterations >= 0, `to_dict`); verify tests cover every rejected value and the default size 1024
+- [x] 1.3 Add `png.py` (`write_png16`, `write_png8`, and a small reader used by tests); verify a round-trip test returns identical pixels, header reports colour type 0 and the right bit depth, and two writes of the same array are byte-identical
 
 ## 2. Noise and island shape
 
