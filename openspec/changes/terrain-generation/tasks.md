@@ -14,9 +14,9 @@
 
 ## 3. Erosion
 
-- [ ] 3.1 Add `erosion.py` (D8 flow, bounded accumulation sweeps, stream-power incision clamped to the lowest neighbour, thermal relaxation, edge ring held); verify unit tests on tiny hand-made grids (a tilted plane, a single peak, a pit)
-- [ ] 3.2 Wire erosion into `terrain.py` behind `erosion_iterations` (0 disables); verify tests: 0 iterations equals the un-eroded terrain, a positive count changes it and keeps the range and island-shape scenarios true, changing erosion parameters leaves the pre-erosion noise field identical
-- [ ] 3.3 Tune default erosion constants on seed 42 at size 1024 and record the resulting timing and a preview image path in `README.md`; verify by running `make generate SEED=42` after section 4 and looking at `preview.png` (valleys branch downhill, no grid artefacts)
+- [x] 3.1 Add `erosion.py` (D8 flow, bounded accumulation sweeps, stream-power incision clamped to the lowest neighbour, thermal relaxation, edge ring held); verify unit tests on tiny hand-made grids (a tilted plane, a single peak, a pit)
+- [x] 3.2 Wire erosion into `terrain.py` behind `erosion_iterations` (0 disables); verify tests: 0 iterations equals the un-eroded terrain, a positive count changes it and keeps the range and island-shape scenarios true, changing erosion parameters leaves the pre-erosion noise field identical
+- [x] 3.3 Tune default erosion constants on seed 42 at size 1024 and record the resulting timing and a preview image path in `README.md`; verify by running `make generate SEED=42` after section 4 and looking at `preview.png` (valleys branch downhill, no grid artefacts)
 
 ## 4. CLI, outputs and determinism
 
