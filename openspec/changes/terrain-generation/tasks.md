@@ -20,10 +20,10 @@
 
 ## 4. CLI, outputs and determinism
 
-- [ ] 4.1 Add `cli.py`, `__main__.py` and a `generate` subcommand writing `heightmap.png`, `preview.png`, `metadata.json` (`sort_keys`, trailing newline, no timestamps); verify tests for spec scenarios "Default files", "Directory missing", "Metadata contents", "Preview matches heightmap"
-- [ ] 4.2 Reject a missing or non-integer seed and out-of-range size before any output exists; verify tests assert non-zero exit status and that the output directory was not created
-- [ ] 4.3 Add the determinism test (generate twice into two directories, compare SHA-256 of all three files; two seeds differ) and a golden-hash test for seed 42 at size 128; verify both pass under `make test`
-- [ ] 4.4 Bump `__version__` to `0.1.0`, add `make generate` (`SEED`, `SIZE`, `OUT` variables) and document usage, outputs and the determinism contract in `README.md`; verify `make generate SEED=42 SIZE=256` produces the three files and `make check` passes
+- [x] 4.1 Add `cli.py`, `__main__.py` and a `generate` subcommand writing `heightmap.png`, `preview.png`, `metadata.json` (`sort_keys`, trailing newline, no timestamps); verify tests for spec scenarios "Default files", "Directory missing", "Metadata contents", "Preview matches heightmap"
+- [x] 4.2 Reject a missing or non-integer seed and out-of-range size before any output exists; verify tests assert non-zero exit status and that the output directory was not created
+- [x] 4.3 Add the determinism test (generate twice into two directories, compare SHA-256 of all three files; two seeds differ) and a golden-hash test for seed 42 at size 128; verify both pass under `make test`
+- [x] 4.4 Bump `__version__` to `0.1.0`, add `make generate` (`SEED`, `SIZE`, `OUT` variables) and document usage, outputs and the determinism contract in `README.md`; verify `make generate SEED=42 SIZE=256` produces the three files and `make check` passes
 
 ## Workflow follow-up
 

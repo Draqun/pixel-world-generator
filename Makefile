@@ -1,13 +1,20 @@
 .DEFAULT_GOAL := help
 export OPENSPEC_TELEMETRY := 0
 
-.PHONY: help setup test lint fmt openspec status check
+.PHONY: help setup generate test lint fmt openspec status check
+
+SIZE ?= 1024
+OUT ?= out
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-10s %s\n", $$1, $$2}'
 
 setup: ## Install dependencies into .venv
 	uv sync
+
+generate: ## Generate a world (make generate SEED=42 [SIZE=1024] [OUT=out])
+	$(if $(SEED),,$(error SEED is required, e.g. make generate SEED=42))
+	uv run python -m pixel_world generate --seed $(SEED) --size $(SIZE) --out $(OUT)
 
 test: ## Run tests (scope: make test ARGS="tests/test_x.py -k name")
 	uv run pytest $(ARGS)
