@@ -6,7 +6,14 @@ from pixel_world.params import Params
 def test_defaults() -> None:
     p = Params(seed=1)
     assert p.size == 1024
-    assert p.to_dict() == {"seed": 1, "size": 1024, "octaves": 6, "erosion_iterations": 50}
+    assert p.to_dict() == {
+        "seed": 1,
+        "size": 1024,
+        "octaves": 6,
+        "erosion_iterations": 50,
+        "island_exponent": 2.5,
+        "island_warp": 0.25,
+    }
 
 
 @pytest.mark.parametrize(
@@ -21,6 +28,9 @@ def test_defaults() -> None:
         {"seed": 1, "size": 100.0},
         {"seed": 1, "octaves": 0},
         {"seed": 1, "erosion_iterations": -1},
+        {"seed": 1, "island_exponent": 0},
+        {"seed": 1, "island_warp": -0.1},
+        {"seed": 1, "island_warp": "x"},
     ],
 )
 def test_rejects_invalid(kwargs: dict) -> None:
