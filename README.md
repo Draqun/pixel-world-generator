@@ -12,3 +12,7 @@ Same seed + same generator version = same world.
 4. Settlements (towns, villages, fortresses) as JSON
 5. Roads and bridges
 6. Borders
+
+## License
+
+MIT, see `LICENSE`.
