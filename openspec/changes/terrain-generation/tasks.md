@@ -8,9 +8,9 @@
 
 ## 2. Noise and island shape
 
-- [ ] 2.1 Add `noise.py` with `fbm` (gradient noise, per-octave sub-streams, large-scale shape tied to `size`); verify tests: deterministic, adding octaves keeps the large-scale shape (low-pass of 4-octave and 6-octave output correlate above 0.99), output range is finite
-- [ ] 2.2 Add `island.py` with `island_mask` (radial falloff warped by low-frequency noise); verify tests: mask is 0 on the edge, 1 near the centre, values within [0, 1]
-- [ ] 2.3 Add `terrain.py` composing noise and mask with erosion off, quantised to `uint16` in [0, 65535]; verify tests for spec scenarios "Range", "Edge is low" and "Interior is higher"
+- [x] 2.1 Add `noise.py` with `fbm` (gradient noise, per-octave sub-streams, large-scale shape tied to `size`); verify tests: deterministic, adding octaves keeps the large-scale shape (low-pass of 4-octave and 6-octave output correlate above 0.99), output range is finite
+- [x] 2.2 Add `island.py` with `island_mask` (radial falloff warped by low-frequency noise); verify tests: mask is 0 on the edge, 1 near the centre, values within [0, 1]
+- [x] 2.3 Add `terrain.py` composing noise and mask with erosion off, quantised to `uint16` in [0, 65535]; verify tests for spec scenarios "Range", "Edge is low" and "Interior is higher"
 
 ## 3. Erosion
 
