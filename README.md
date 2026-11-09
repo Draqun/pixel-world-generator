@@ -20,9 +20,12 @@ make generate SEED=42 SIZE=256          # writes out/heightmap.png, preview.png,
 make generate SEED=42 OUT=out/island42  # SIZE defaults to 1024
 ```
 
-`--seed` is required. Same seed, generator version and parameters give byte-identical files on the
+`--seed` is required. `--height-range` (default 400) is how many metres the full 16-bit range
+spans; it is only recorded in `metadata.json` and does not change any pixel. Same seed, generator version and parameters give byte-identical files on the
 same platform; `metadata.json` records the seed, generator version and every parameter.
-`heightmap.png` is 16-bit grayscale, 1 px = 1 m; `preview.png` is the same image in 8 bits.
+`heightmap.png` is 16-bit grayscale, 1 px = 1 m; `heightmap.r16` holds the same values as a
+headerless little-endian uint16 raw file (row-major, top row first), the format Godot terrain addons
+import as R16/RAW; `preview.png` is the same image in 8 bits.
 
 ## Terrain
 

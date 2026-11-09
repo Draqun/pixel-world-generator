@@ -25,6 +25,12 @@
 - [x] 4.3 Add the determinism test (generate twice into two directories, compare SHA-256 of all three files; two seeds differ) and a golden-hash test for seed 42 at size 128; verify both pass under `make test`
 - [x] 4.4 Bump `__version__` to `0.1.0`, add `make generate` (`SEED`, `SIZE`, `OUT` variables) and document usage, outputs and the determinism contract in `README.md`; verify `make generate SEED=42 SIZE=256` produces the three files and `make check` passes
 
+## 5. Raw export and vertical scale
+
+- [x] 5.1 Add `height_range_m` to `Params` (default 400, must be > 0) and `--height-range` to the CLI; verify tests: recorded in metadata, invalid values rejected before any output, pixels unchanged when only the range differs
+- [x] 5.2 Write `heightmap.r16` (little-endian uint16, row-major) next to the PNG; verify a test that the file size is `size` x `size` x 2 and values equal the PNG pixels, and update the golden-hash and file-list tests
+- [x] 5.3 Document both in `README.md` and `AGENTS.md` (output format); verify `make generate SEED=42 SIZE=256` lists `heightmap.r16` and `make check` passes
+
 ## Workflow follow-up
 
 - Each section above is one PR (`Part of` the tracking issue). Archive the change in the last PR, after the owner confirmed the preview looks right.

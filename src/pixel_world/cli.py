@@ -24,6 +24,7 @@ def generate(params: Params, out: Path) -> None:
     preview = ((height.astype(np.uint32) + 128) // 257).astype(np.uint8)  # round(h / 257)
     out.mkdir(parents=True, exist_ok=True)
     write_png16(out / "heightmap.png", height)
+    (out / "heightmap.r16").write_bytes(height.astype("<u2").tobytes())
     write_png8(out / "preview.png", preview)
     (out / "metadata.json").write_text(_metadata(params), encoding="utf-8")
 
@@ -36,6 +37,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     gen.add_argument("--size", type=int, default=Params.size)
     gen.add_argument("--octaves", type=int, default=Params.octaves)
     gen.add_argument("--erosion-iterations", type=int, default=Params.erosion_iterations)
+    gen.add_argument("--height-range", type=float, default=Params.height_range_m)
     gen.add_argument("--out", type=Path, default=Path("out"))
     args = parser.parse_args(argv)
     try:
@@ -44,6 +46,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             size=args.size,
             octaves=args.octaves,
             erosion_iterations=args.erosion_iterations,
+            height_range_m=args.height_range,
         )
     except ValueError as error:
         parser.error(str(error))  # exits with status 2 before any file is written

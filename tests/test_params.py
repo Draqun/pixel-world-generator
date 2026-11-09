@@ -15,6 +15,7 @@ def test_defaults() -> None:
         "island_warp": 0.25,
         "erosion_strength": 0.04,
         "erosion_talus": 0.004,
+        "height_range_m": 400.0,
     }
 
 
@@ -35,6 +36,8 @@ def test_defaults() -> None:
         {"seed": 1, "island_warp": "x"},
         {"seed": 1, "erosion_strength": -1},
         {"seed": 1, "erosion_talus": 0},
+        {"seed": 1, "height_range_m": 0},
+        {"seed": 1, "height_range_m": -5},
     ],
 )
 def test_rejects_invalid(kwargs: dict) -> None:

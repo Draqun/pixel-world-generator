@@ -43,7 +43,9 @@ Build them in this order; each depends on the previous one.
 
 ## Output format
 
-- Heightmap: 16-bit single-channel PNG. 8-bit is forbidden (visible terracing).
+- Heightmap: 16-bit single-channel PNG, plus the same values as headerless little-endian
+  `heightmap.r16` for engines. 8-bit is forbidden (visible terracing; `preview.png` is only a preview).
+  The metre scale of the full range is `height_range_m` in the metadata.
 - Other layers (water, biome, slope, roads, borders): separate PNGs, same size as the heightmap.
 - Entities (towns, villages, fortresses, bridges, borders): JSON.
 - Layout is x right, y down, pixel (0, 0) top left, so a layer overlays the heightmap 1:1.
