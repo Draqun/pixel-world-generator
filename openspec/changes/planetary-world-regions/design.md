@@ -5,13 +5,15 @@
 The current terrain path normalizes a whole `size × size` NumPy array and applies an island mask;
 noise depends on array size. Erosion and water hold whole-map arrays, and ocean flood uses image
 edges as outlets. Existing `terrain-heightmap` promises an island and full-range normalization.
-The pending `terrain-layouts` change modifies those same promises and excludes tiles. See
-proposal.md and the three delta specs for the new product contract.
+The former `terrain-layouts` proposal has been absorbed into this change, removing duplicate
+ownership of layout and terrain contracts. The owner clarified that island was an example, not
+the intended mandatory shape. See proposal.md and the three delta specs for the new contract.
 
 ## Goals / Non-Goals
 
 **Goals:** deterministic bounded regional work, physical-size metadata, addressable world
-locations, meaningful overview-to-detail mapping, and clear fidelity for global water.
+locations, persistent resumable projects, both overview-first and region-first workflows,
+meaningful overview-to-detail mapping, and clear fidelity for global water.
 
 **Non-Goals:** a full-resolution global export, real-time game streaming or Godot changes,
 exact metre-resolution global water, biomes, settlements, roads or borders in the first terrain
@@ -22,13 +24,28 @@ pipeline already works at planetary scale.
 
 - **Independent axes:** record geometry (`sphere` or `flat`), physical extent and geographic
   intent separately. Flat supports bounded or east-west periodic edges; a sphere is not merely a
-  periodic rectangle and has no physical boundary. Regional-first generation creates a standalone
-  definition, not a fictitious subset of another world's seed. Island, peninsula, continent and
+  periodic rectangle and has no physical boundary. Region-first generation creates a persistent world definition or uses an existing project;
+  its first export bounds are not world boundaries. Unrelated projects remain independent. Island, peninsula, continent and
   local region are meaningful starting presets with recorded extents and documented reference
   fixtures; avoid promising that arbitrary seeds produce a particular coastline without checks.
+- **Project lifecycle (implementation choice):** fix geometry, physical world dimensions, origin,
+  vertical datum, algorithm versions and geography constraints when creating a project. Users may
+  defer all raster generation except the needed region; this does not defer the coordinate frame.
+  Later expansion means generating more coverage within this definition, not resizing a sphere or
+  stretching a bounded world. Changing those defining choices needs a new project or an explicit
+  future migration. Keep an immutable generation definition separate from a canonically ordered
+  coverage/artifact index. Resume from persisted data, never process state or a required cache.
+  Reject unsupported versions and incompatible overrides before writes. Save artifacts safely,
+  publish coverage only for complete exports, and leave previous artifacts intact on failure.
+  Region metadata identifies the stable definition, not the changing coverage index; generating
+  neighbours must not alter old metadata hashes. Regenerating an overview uses the same field,
+  not a new constraint-fitting pass over whichever regions happen to exist.
 - **World representation:** persist a versioned manifest with seed, algorithm and step versions,
   geometry, dimensions/radius, projection and units, requested geography, global vertical and
-  sea datum, overview resolution, sampling rule and stable artifact hashes. The overview is a
+  sea datum, configured overview resolution, sampling rule and stable artifact hashes. The overview
+  is optional and can be generated before or after local exports. Its anchor lattice is determined
+  by the saved definition even when no overview image exists; adding an overview cannot introduce
+  new constraints or change detailed samples. The overview is a
   finite, explicitly scaled product, not a resampled 16-million-square allocation. An overview
   pixel is a sample, not a promise that its entire footprint is uniformly land or sea. Maintain
   exact overview anchor samples at defined world locations and refine between anchors; classify
@@ -71,9 +88,9 @@ pipeline already works at planetary scale.
   attempting the impossible full-resolution output.
 - **Compatibility and overlapping plan:** preserve the legacy `generate` path, default island,
   heightmap/preview bytes and existing size bounds. Provide new world/region operations rather
-  than silently changing those flags. The pending `terrain-layouts` delta and its tasks overlap
-  island/default/boundary requirements; reconcile them with this change in the first PR before
-  applying either overlapping contract. Its standalone presets are not proof of world continuity.
+  than silently changing those flags. This change owns the former `terrain-layouts` geography
+  choices and terrain deltas; do not implement a second standalone preset system first. Island defaults belong only to the legacy
+  command. The project workflow requires an explicit recorded geography choice.
   Follow terrain → water → biomes → settlements → roads → borders, one tasks section per PR.
 
 ## Risks / Trade-offs
@@ -91,9 +108,12 @@ pipeline already works at planetary scale.
 
 ## Migration Plan
 
-Keep legacy files and commands intact. First reconcile pending spec deltas and establish versioned
-world definitions; deliver terrain hierarchy and regional exports in independently reviewable PRs,
+Keep legacy files and commands intact. First establish persisted, versioned world projects and
+world coordinates; deliver terrain hierarchy and regional exports in independently reviewable PRs,
 then integrate navigation and documentation. Bump the generator version for algorithm changes
-and update goldens deliberately. Roll back the added operations without rewriting existing worlds;
+and update goldens deliberately. Before implementing regional erosion, prove whether the current
+catchment-based erosion has bounded dependencies; a local halo is not assumed sufficient for
+global accumulation. Specify a compatible world-space method or explicitly reject unsupported
+erosion settings rather than claiming seam guarantees without evidence. Roll back the added operations without rewriting existing worlds;
 retained manifest versions must fail explicitly when unsupported. Archive only after the final PR
 and owner confirmation, per repository workflow.

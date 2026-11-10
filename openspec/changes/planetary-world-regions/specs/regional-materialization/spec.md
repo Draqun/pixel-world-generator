@@ -82,3 +82,24 @@ before exporting the layer instead of silently treating region boundaries as oce
 #### Scenario: Exact drainage unavailable
 - **WHEN** exact world-wide metre-scale catchment data is requested but unavailable
 - **THEN** the request fails explicitly without presenting an approximate result as exact
+
+### Requirement: Additional coverage preserves existing regions
+Generating additional regions SHALL use the saved project definition and SHALL NOT rewrite
+previously generated regions or renormalize their elevations. A project SHALL record generated
+coverage and artifact provenance separately from its immutable generation definition; coverage
+history SHALL NOT affect terrain samples. Persistent project data SHALL be sufficient to resume
+on the same supported platform without relying on transient caches or an earlier process.
+
+#### Scenario: Generate neighbours later
+- **WHEN** a user generates region A, closes the tool, reopens the project and generates adjacent region B
+- **THEN** every original file for A retains its hash
+- **AND** shared sample positions match a fresh combined-area export using the same canonical grid
+
+#### Scenario: Different generation orders
+- **WHEN** two copies of the same project generate areas A and B in opposite orders
+- **THEN** corresponding regional terrain and metadata files have identical hashes
+- **AND** their final coverage records contain the same artifacts in canonical order
+
+#### Scenario: Caches are absent
+- **WHEN** only saved project data is retained and disposable caches are removed
+- **THEN** the tool can regenerate existing terrain and continue into previously ungenerated coverage

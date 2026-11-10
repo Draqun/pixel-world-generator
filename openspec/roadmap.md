@@ -1,7 +1,8 @@
 # World generation roadmap and recovered decisions
 
 This is a planning index, not evidence that pending features are implemented. Current main specs
-cover seeded terrain and release management. Every pending change has proposal, specs, design
+cover seeded terrain and release management. Water and interactive CLI are implemented and merged
+but await owner confirmation, spec synchronization and archive. Every pending change has proposal, specs, design
 and tasks; implementation requires a separate apply request. Each tasks section is one PR.
 
 ## Sources and confidence
@@ -21,37 +22,59 @@ requirements. Local JSONL line references below identify the source messages.
 | Current AGENTS.md | Independent streams, pure generation steps, versioned deterministic bytes, PNG layers and JSON, one tasks section per PR | Binding implementation constraints |
 | Current README.md | Remaining baseline stage order | Baseline implementation sequence |
 
+The owner clarified on 2026-11-10 that an island was only an example. The intended product is a
+persistent world project: start with a whole-world overview or only a needed region, save it, and
+generate further coverage of the same world later without changing existing terrain. Separate
+projects are independent. An overview is optional; a first region is not an artificial world edge.
+
 The original discussion did not decide an open-world game, city interiors, factions, names,
 weather, ferries, tunnels or engine integration. Those do not become requirements here.
 Claude's comment that larger worlds need tiles was technical advice, not an agreed world-size
-or streaming contract. Until that scope is selected, pending changes retain the existing 64–8192
-single-map limit. No unlimited-world or out-of-core performance guarantee is implied.
+or streaming contract. The later planetary-world-regions plan now owns bounded-memory overview
+and regional export; the existing 64–8192 limit remains a legacy single-map limit, not a world
+extent limit. No unlimited-world or real-time streaming guarantee is implied.
 
-## Baseline sequence
+## Current status and next sequence
 
-| Order | Change | New capability | Prerequisite | PR sections |
-| --- | --- | --- | --- | --- |
-| Done | terrain-generation | seeded-generation, terrain-heightmap | None | Archived |
-| 1 | [water-generation](changes/water-generation/proposal.md) | surface-water | Terrain | Sea/lakes; rivers; CLI/output |
-| 2 | [biome-generation](changes/biome-generation/proposal.md) | biome-classification | Water merged | Environmental fields; categories/output |
-| 3 | [settlement-generation](changes/settlement-generation/proposal.md) | settlement-placement | Biomes merged | Placement; entity output |
-| 4 | [roads-and-bridges](changes/roads-and-bridges/proposal.md) | transport-network | Settlements merged | Graph/bridges; network; output |
-| 5 | [border-generation](changes/border-generation/proposal.md) | territory-borders | Transport merged | Partition; boundary output |
+| Change | Status | Next action |
+| --- | --- | --- |
+| terrain-generation | Implemented and archived | Preserve legacy output compatibility |
+| water-generation | All tasks complete and merged | Owner confirmation, sync surface-water, archive |
+| interactive-typer-cli | All tasks complete and merged | Owner confirmation, sync interactive-world-cli, archive |
+| [planetary-world-regions](changes/planetary-world-regions/proposal.md) | Planning, no implementation | Next terrain milestone: persistent projects and world coordinates |
+| biome-generation | Planned for existing single-map water | Defer world-linked implementation until global water has a contract |
+| settlement-generation | Planned, depends on biomes | Defer until biomes are merged for the target workflow |
+| roads-and-bridges | Planned, depends on settlements | Defer until settlements are merged for the target workflow |
+| border-generation | Planned, depends on transport | Defer until transport is merged for the target workflow |
 
-Do not start implementation of a downstream change merely because OpenSpec reports its planning
-artifacts ready. The prerequisite in its proposal and tasks must be merged first. CLI additions
-are cumulative: preserve earlier outputs and tests, and extend the all-file hash comparison.
+The unimplemented `terrain-layouts` plan is absorbed into `planetary-world-regions`, not archived
+as completed work. Geography selection and terrain contract changes have one owner. Island
+remains the legacy command default for compatibility, not the mandatory shape of new projects.
 
-## Layout extension
+## World project milestone
 
-[terrain-layouts](changes/terrain-layouts/proposal.md) covers the original local-area/island/world
-choice as region, default island and continent-shaped presets. It explicitly modifies the
-island/erosion shape promises in terrain-heightmap. It requires water for sea-relative elevations
-and is scheduled after the baseline island pipeline; it does not block the next water slice.
+1. Persist a world definition and reload it: seed, versions, geometry, physical dimensions,
+   coordinates, vertical/sea datum, parameters and geography constraints. Separate generation
+   rules from generated coverage. Document fixed world dimensions versus deferred materialization.
+2. Add geographic choices and optional bounded overview. Its sampling lattice must be defined
+   before regional output, even when the overview image is generated later.
+3. Generate coordinate-keyed terrain and aligned regional PNG/R16. Verify overlaps, different
+   request orders, reopen/resume and later neighbours without changing old file hashes. Prove
+   erosion dependencies before promising seamless eroded exports.
+4. Integrate both Make-accessible workflows: overview then detail, or region then more coverage
+   and optional overview. Record unsupported layers explicitly.
 
-Unsigned samples remain heights above the encoded minimum. Water records a sea datum, so
-`height / 65535 * height_range_m - sea_level_m` yields signed sea-relative elevation, including
-depressions. No signed PNG or change to the current vertical-scale contract is needed.
+Each numbered tasks section remains one implementation PR. Do not start the next section before
+its PR is open. This planning revision does not mark any implementation task complete.
+
+Next design globally consistent water, then biomes, settlements, roads/bridges and borders in the
+binding stage order. Existing downstream plans remain useful for the single-map pipeline; they
+are not contracts for cross-region continuity and need reconciliation before world-linked use.
+Do not run edge-seeded local water on arbitrary exported regions as if their edges were oceans.
+
+Unsigned samples remain heights above the encoded minimum. With the saved sea datum,
+`height / 65535 * height_range_m - sea_level_m` yields signed sea-relative elevation. World-linked
+regions share one vertical encoding; only legacy standalone maps normalize over each output.
 
 ## Proposed implementation choices
 
@@ -64,7 +87,8 @@ These are new planning choices for owner review, not historical agreements:
 - Settlements: greedy spaced suitability maxima, kind-specific masks and explicit count shortfalls.
 - Transport: A* over dry ground plus bounded cardinal bridges, with a reachable spanning forest.
 - Territories: towns as capitals, weighted growth, unclaimed components and exact raster boundaries.
-- Layouts: island remains pixel-compatible; region removes forced coast; continent has its own envelope.
+- World geography: island, peninsula, continent and local area are recorded choices in a persistent
+  world project; legacy island remains pixel-compatible. Generation order cannot change terrain.
 
 Tune documented parameters on reference maps, but do not silently narrow a SHALL requirement to
 make implementation fit. In particular, missing routes, cyclic drainage, unsupported sizes or
@@ -81,16 +105,18 @@ inadequate hardware performance must not be hidden as successful complete genera
 | Transport | roads.png, roads.json, bridges.json |
 | Territories | territories.png, borders.png, borders.json |
 
-All rasters share size, one-metre pixels and top-left x-right/y-down coordinates. Metadata records
+Within each detailed export, rasters share size, one-metre pixels and top-left x-right/y-down
+coordinates. World overviews use their separately recorded scale and projection. Metadata records
 every control, version and categorical legend. Entity IDs are stable within identical runs;
 references must resolve. Downstream-only parameter changes preserve all upstream data files,
 while shared metadata legitimately changes. Every algorithm change bumps both version declarations.
 
 ## Later ideas requiring a separate scope decision
 
-- Tile export and genuinely larger-than-8192 worlds: distinguish slicing one existing map from
-  generating globally consistent large terrain, drainage and entity networks without holding
-  the whole world in memory. Independent per-tile generation is not seamless global hydrology.
+- Exact global hydrology and cross-region entity networks need separate designs after world terrain.
+  Regional terrain and bounded-memory world overview are already in planetary-world-regions scope.
+- Resizing a saved finite world or changing its geometry while preserving old areas requires a
+  separate migration design; ordinary continuation materializes more of the saved definition.
 - Godot import/rendering or a world-map scene: separate consumer work in retro-game, subject to
   that project's own level-authoring decisions. This repository emits data only.
 

@@ -3,8 +3,9 @@
 ## Why
 
 A metre-scale island-sized image cannot represent a realistically large world or place a story
-region in relation to its continents. The owner needs both a readable whole-world map and
-repeatable, detailed local areas, while also being able to start from a smaller chosen geography.
+region in relation to its continents. The owner needs persistent world projects that can start
+with either a readable whole-world overview or a detailed local area, then generate additional areas without changing earlier data.
+The original island example was not a restriction on the tool.
 
 ## What Changes
 
@@ -18,8 +19,11 @@ repeatable, detailed local areas, while also being able to start from a smaller 
   world height datum rather than independently normalizing each exported tile.
 - Define explicit, honest handling of globally connected water and future layers: no claim that
   independently generated tile edges constitute a complete global drainage or road network.
-- Reconcile the pending `terrain-layouts` change, which currently assumes island by default and
-  excludes tiling, before either change implements overlapping layout contracts.
+- Persist all generation-defining project data so region-first projects can resume, generate
+  neighbours and produce a later overview of the same world without rewriting existing terrain.
+- Make overview creation optional and independent of regional generation.
+- Absorb the unimplemented `terrain-layouts` plan here: geography is selected within a world
+  project, while the old standalone island command remains compatible.
 
 ## Capabilities
 
