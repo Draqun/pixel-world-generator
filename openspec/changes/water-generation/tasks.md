@@ -5,8 +5,8 @@ starting the next section. Run make check for each section and add its changelog
 
 ## 1. Sea, retained lakes and routing surface
 
-- [ ] 1.1 Add pure sea connectivity and priority-flood depression handling with stable flat/outlet ordering; verify synthetic bowls, barriers, plateaus, no-sea and all-sea cases, input immutability and absence of drainage cycles.
-- [ ] 1.2 Add and validate recorded sea/depth controls, document units and default datum in README.md, and bump both version declarations with intentional golden updates; verify non-finite/out-of-range inputs are rejected and existing terrain byte hashes stay unchanged.
+- [x] 1.1 Add pure sea connectivity and priority-flood depression handling with stable flat/outlet ordering; verify synthetic bowls, barriers, plateaus, no-sea and all-sea cases, input immutability and absence of drainage cycles.
+- [x] 1.2 Add and validate recorded sea/depth controls, document units and default datum in README.md, and bump both version declarations with intentional golden updates; verify non-finite/out-of-range inputs are rejected and existing terrain byte hashes stay unchanged.
 
 ## 2. Catchments and river geometry
 

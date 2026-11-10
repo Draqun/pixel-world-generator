@@ -44,7 +44,10 @@ def test_default_size_is_1024() -> None:
 def test_metadata_records_run_including_defaults(tmp_path: Path) -> None:
     run(tmp_path, "--seed", "7", "--octaves", "3", "--size", "64", "--erosion-iterations", "1")
     meta = json.loads((tmp_path / "metadata.json").read_text())
-    assert meta["seed"] == 7 and meta["generator_version"] == "0.1.0"
+    assert meta["seed"] == 7 and meta["generator_version"] == "0.2.0"
+    assert meta["sea_level_m"] == 80.0
+    assert meta["params"]["sea_level"] == 0.2
+    assert meta["params"]["min_lake_depth_m"] == 1.0
     assert meta["params"]["octaves"] == 3
     assert {
         "island_exponent",
@@ -113,3 +116,18 @@ def test_golden_hash_seed_42(tmp_path: Path) -> None:
         digests(tmp_path)["heightmap.png"]
         == "17009a7ac83b5ece48bd626dac9945138249abd045748e9b0edea554eb9fbc72"
     )
+
+
+def test_water_parameters_do_not_change_terrain_files(tmp_path: Path) -> None:
+    from pixel_world.cli import generate
+
+    generate(Params(seed=42, size=64, octaves=2, erosion_iterations=2), tmp_path / "a")
+    generate(
+        Params(
+            seed=42, size=64, octaves=2, erosion_iterations=2, sea_level=0.8, min_lake_depth_m=10
+        ),
+        tmp_path / "b",
+    )
+    a, b = digests(tmp_path / "a"), digests(tmp_path / "b")
+    assert all(a[name] == b[name] for name in FILES if name != "metadata.json")
+    assert a["metadata.json"] != b["metadata.json"]

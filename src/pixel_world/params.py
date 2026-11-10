@@ -1,5 +1,6 @@
 """Generation parameters: defaults, validation, serialisation."""
 
+import math
 from dataclasses import asdict, dataclass
 
 SIZE_MIN = 64
@@ -17,6 +18,8 @@ class Params:
     erosion_strength: float = 0.04
     erosion_talus: float = 0.004
     height_range_m: float = 400.0
+    sea_level: float = 0.2
+    min_lake_depth_m: float = 1.0
 
     def __post_init__(self) -> None:
         for name in ("seed", "size", "octaves", "erosion_iterations"):
@@ -29,10 +32,18 @@ class Params:
             "erosion_strength",
             "erosion_talus",
             "height_range_m",
+            "sea_level",
+            "min_lake_depth_m",
         ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ValueError(f"{name} must be a number, got {value!r}")
+        if not math.isfinite(self.sea_level) or not 0 <= self.sea_level < 1:
+            raise ValueError("sea_level must be finite and in [0, 1)")
+        if not math.isfinite(self.min_lake_depth_m) or self.min_lake_depth_m < 0:
+            raise ValueError("min_lake_depth_m must be finite and >= 0")
+        if not math.isfinite(self.height_range_m):
+            raise ValueError("height_range_m must be finite")
         if self.island_exponent <= 0:
             raise ValueError(f"island_exponent must be > 0, got {self.island_exponent}")
         if self.erosion_strength < 0:
