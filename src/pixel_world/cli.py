@@ -15,7 +15,12 @@ from pixel_world.terrain import generate_terrain
 
 def _metadata(params: Params) -> str:
     fields = params.to_dict()
-    meta = {"generator_version": __version__, "seed": fields.pop("seed"), "params": fields}
+    meta = {
+        "generator_version": __version__,
+        "seed": fields.pop("seed"),
+        "params": fields,
+        "sea_level_m": params.sea_level * params.height_range_m,
+    }
     return json.dumps(meta, sort_keys=True, indent=2) + "\n"
 
 

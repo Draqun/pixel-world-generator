@@ -80,3 +80,9 @@ If the release already exists but an upload failed, attach the missing files wit
 ## License
 
 MIT, see `LICENSE`.
+
+The water datum defaults to `sea_level=0.2`, a fraction of `height_range_m` in the
+range [0, 1). Metadata records `sea_level_m` in metres above the encoded height
+minimum; sea-relative elevation is height in metres minus this datum. The default
+`min_lake_depth_m=1.0` is a minimum retained depth in metres (non-negative).
+These parameters are recorded now; the water layer and CLI controls follow in a later slice.
