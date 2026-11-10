@@ -15,8 +15,8 @@ starting the next section. Run make check for each section and add its changelog
 
 ## 3. Layer outputs and CLI integration
 
-- [ ] 3.1 Integrate water.png, metadata legends, CLI controls and Make ARGS forwarding, moving serialization into one writer while retaining current CLI callers; verify the four existing outputs remain present and height PNG/R16/preview bytes stay identical for unchanged terrain parameters.
-- [ ] 3.2 Extend the all-file SHA-256 determinism test and golden fixtures, document Make usage and water categories; verify two seeds, same seed twice, water-only parameter isolation, invalid input before output creation and make check.
+- [x] 3.1 Integrate water.png, metadata legends, CLI controls and Make ARGS forwarding, moving serialization into one writer while retaining current CLI callers; verify the four existing outputs remain present and height PNG/R16/preview bytes stay identical for unchanged terrain parameters.
+- [x] 3.2 Extend the all-file SHA-256 determinism test and golden fixtures, document Make usage and water categories; verify two seeds, same seed twice, water-only parameter isolation, invalid input before output creation and make check.
 
 ## Workflow follow-up
 

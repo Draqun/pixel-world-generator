@@ -1,149 +1,299 @@
-"""Interactive terminal workflow for terrain generation."""
+"""Keyboard and mouse interface for generating and inspecting a world."""
 
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import click
 import numpy as np
-from rich.console import Console
-from rich.table import Table
+from textual import on, work
+from textual.app import App, ComposeResult
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.screen import ModalScreen
+from textual.widgets import Button, Footer, Header, Input, Label, Select, Static
 
 from pixel_world.cli import generate
 from pixel_world.params import Params
 from pixel_world.png import read_png
 
 FIELDS = {
-    "seed": (int, "World seed", "integer >= 0", None),
-    "size": (int, "Map width and height in pixels", "64–8192", Params.size),
-    "octaves": (int, "Noise detail layers", ">= 1", Params.octaves),
-    "erosion_iterations": (int, "Erosion passes", ">= 0", Params.erosion_iterations),
-    "island_exponent": (float, "Island edge falloff", "> 0", Params.island_exponent),
-    "island_warp": (float, "Island edge distortion", ">= 0", Params.island_warp),
-    "erosion_strength": (float, "Erosion strength", ">= 0", Params.erosion_strength),
-    "erosion_talus": (float, "Erosion slope threshold", "> 0", Params.erosion_talus),
-    "height_range_m": (float, "Height range in metres", "> 0", Params.height_range_m),
-    "out": (Path, "Output directory", "path", Path("out")),
+    "seed": (int, "Seed — non-negative integer; the same seed reproduces the map", None),
+    "size": (int, "Map size — width and height in pixels (64–8192, 1 px = 1 m)", Params.size),
+    "octaves": (int, "Terrain detail — number of noise layers (at least 1)", Params.octaves),
+    "erosion_iterations": (
+        int,
+        "Erosion passes — more passes take longer (0 or more)",
+        Params.erosion_iterations,
+    ),
+    "island_exponent": (
+        float,
+        "Island edge falloff — higher values steepen the edge (> 0)",
+        Params.island_exponent,
+    ),
+    "island_warp": (
+        float,
+        "Island edge distortion — 0 disables warping (0 or more)",
+        Params.island_warp,
+    ),
+    "erosion_strength": (
+        float,
+        "Erosion strength — 0 disables erosion (0 or more)",
+        Params.erosion_strength,
+    ),
+    "erosion_talus": (
+        float,
+        "Erosion slope threshold — higher values retain steeper slopes (> 0)",
+        Params.erosion_talus,
+    ),
+    "height_range_m": (float, "Full height range in metres (> 0)", Params.height_range_m),
+    "sea_level": (
+        float,
+        "Sea level — fraction of height range (0 inclusive to 1 exclusive)",
+        Params.sea_level,
+    ),
+    "min_lake_depth_m": (
+        float,
+        "Minimum lake depth in metres (0 or more)",
+        Params.min_lake_depth_m,
+    ),
+    "river_threshold": (
+        int,
+        "River threshold — contributing area in square metres (at least 1)",
+        Params.river_threshold,
+    ),
+    "max_river_width": (int, "Maximum river width in pixels (at least 1)", Params.max_river_width),
 }
-OUTPUTS = ("heightmap.png", "heightmap.r16", "preview.png", "metadata.json")
-console = Console()
+OUTPUTS = ("heightmap.png", "heightmap.r16", "preview.png", "water.png", "metadata.json")
 
 
-def _confirm(prompt: str) -> bool:
-    return input(f"{prompt} [y/N]: ").strip().lower() in ("y", "yes")
+class ConfirmOverwrite(ModalScreen[bool]):
+    """Confirm replacing existing generated files."""
+
+    def __init__(self, params: Params, out: Path, overwrite: bool) -> None:
+        super().__init__()
+        self.summary = f"Seed: {params.seed} | Size: {params.size} × {params.size} | Output: {out}"
+        self.warning = (
+            "Existing generated files will be overwritten."
+            if overwrite
+            else "Generate with these settings?"
+        )
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="confirm"):
+            yield Static(f"{self.summary}\n{self.warning}", id="confirm-message")
+            with Horizontal():
+                yield Button("Cancel", id="cancel", variant="primary")
+                yield Button("Generate", id="overwrite", variant="warning")
+
+    @on(Button.Pressed)
+    def choose(self, event: Button.Pressed) -> None:
+        self.dismiss(event.button.id == "overwrite")
 
 
-def _configure(values: dict) -> None:
-    while True:
-        table = Table(title="World parameters")
-        for heading in ("Name", "Value", "Default", "Description", "Range"):
-            table.add_column(heading)
-        for name, (_, description, allowed, default) in FIELDS.items():
-            table.add_row(name, str(values[name]), str(default), description, allowed)
-        console.print(table)
-        choice = input("Parameter name, generate, or back: ").strip()
-        if choice == "back":
-            return
-        if choice == "generate":
-            if values["seed"] is None:
-                console.print("[red]Set a seed first.[/red]")
-                continue
-            try:
-                params = Params(**{k: v for k, v in values.items() if k != "out"})
-            except ValueError as error:
-                console.print(f"[red]{error}[/red]")
-                continue
-            if not _confirm("Generate with these values?"):
-                continue
-            out = values["out"]
-            if any((out / name).exists() for name in OUTPUTS) and not _confirm("Overwrite output?"):
-                continue
-            try:
-                generate(params, out)
-                console.print(f"Generated world in {out}")
-            except OSError as error:
-                console.print(f"[red]Could not write {out}: {error}[/red]")
-            continue
-        if choice not in FIELDS:
-            console.print("[red]Choose a listed parameter, generate, or back.[/red]")
-            continue
-        try:
-            candidate = FIELDS[choice][0](input(f"{choice}: ").strip())
-            if choice != "out":
-                updated = {**values, choice: candidate}
-                Params(
-                    **{k: v for k, v in updated.items() if k != "out" and v is not None},
-                    **({"seed": 0} if updated["seed"] is None else {}),
+class WorldApp(App[None]):
+    """Edit settings, generate and inspect map layers."""
+
+    CSS = """
+    Screen { layout: vertical; }
+    #settings { height: 1fr; padding: 0 1; }
+    .field { height: 3; }
+    .field Label { width: 1fr; padding-top: 1; }
+    .field Input { width: 24; }
+    #actions { height: 3; padding: 0 1; }
+    #status { height: 2; padding: 0 1; }
+    #layer { width: 25; }
+    #preview { height: auto; max-height: 24; padding: 0 1; }
+    ConfirmOverwrite { align: center middle; background: $background 70%; }
+    #confirm { width: 54; height: 9; padding: 1 2; background: $surface; border: solid $primary; }
+    #confirm-message { height: 3; }
+    """
+    TITLE = "Pixel World Generator"
+    BINDINGS = [("ctrl+q", "quit", "Quit")]
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=False)
+        with VerticalScroll(id="settings"):
+            yield Static(
+                "Configure a world. Tab moves between fields; edit any value. Seed is required."
+            )
+            with Horizontal(classes="field"):
+                yield Label("Map size preset — choose a starting point or enter a custom size")
+                yield Select(
+                    [
+                        ("Small · 256 m", 256),
+                        ("Medium · 512 m", 512),
+                        ("Large · 1024 m", 1024),
+                        ("Huge · 2048 m", 2048),
+                    ],
+                    value=1024,
+                    allow_blank=False,
+                    id="size-preset",
                 )
-            values[choice] = candidate
+            for name, (_, description, default) in FIELDS.items():
+                with Horizontal(classes="field"):
+                    yield Label(description)
+                    yield Input(
+                        value="" if default is None else str(default),
+                        placeholder="Required" if default is None else "",
+                        id=name,
+                    )
+            with Horizontal(classes="field"):
+                yield Label("Output directory — existing generated files require confirmation")
+                yield Input(value="out", id="out")
+            yield Static(
+                "Preview layer: choose a generated image, then select Preview or Open viewer."
+            )
+            with Horizontal():
+                yield Select(
+                    [],
+                    prompt="No images found",
+                    allow_blank=True,
+                    id="layer",
+                )
+                yield Button("Preview", id="show-preview")
+                yield Button("Open viewer", id="open-viewer")
+            yield Static("", id="preview")
+        yield Static("Ready.", id="status")
+        with Horizontal(id="actions"):
+            yield Button("Generate world", id="generate", variant="primary")
+            yield Button("Quit", id="quit")
+        yield Footer()
+
+    @on(Select.Changed, "#size-preset")
+    def size_preset(self, event: Select.Changed) -> None:
+        if event.value is not Select.BLANK:
+            self.query_one("#size", Input).value = str(event.value)
+
+    def message(self, text: str) -> None:
+        self.query_one("#status", Static).update(text)
+
+    @on(Button.Pressed, "#quit")
+    def quit_button(self) -> None:
+        self.exit()
+
+    @on(Button.Pressed, "#generate")
+    def start_generation(self) -> None:
+        try:
+            values = {}
+            for name, (kind, description, _) in FIELDS.items():
+                raw = self.query_one(f"#{name}", Input).value.strip()
+                try:
+                    values[name] = kind(raw)
+                except ValueError as error:
+                    raise ValueError(
+                        f"{description.split(' — ')[0]} requires a {kind.__name__} value"
+                    ) from error
+            params = Params(**values)
+            out_text = self.query_one("#out", Input).value.strip()
+            if not out_text:
+                raise ValueError("Output directory is required")
+            out = Path(out_text)
         except ValueError as error:
-            console.print(f"[red]Invalid value: {error}[/red]")
+            self.message(f"Invalid settings: {error}. Correct the field and try again.")
+            return
+        overwrite = any((out / name).exists() for name in OUTPUTS)
+        self.push_screen(
+            ConfirmOverwrite(params, out, overwrite),
+            lambda accepted: self.begin_generation(params, out) if accepted else None,
+        )
 
+    def begin_generation(self, params: Params, out: Path) -> None:
+        self.query_one("#generate", Button).disabled = True
+        self.message("Generating world…")
+        self.generate_world(params, out)
 
-def _open_image(path: Path) -> None:
-    if sys.platform == "win32":
-        os.startfile(path)  # type: ignore[attr-defined]
-    else:
-        command = "open" if sys.platform == "darwin" else "xdg-open"
-        subprocess.run([command, str(path.resolve())], check=True, capture_output=True)
+    @work(thread=True, exclusive=True)
+    def generate_world(self, params: Params, out: Path) -> None:
+        try:
+            generate(params, out)
+        except (OSError, ValueError) as error:
+            self.call_from_thread(self.message, f"Generation failed: {error}")
+        else:
+            self.call_from_thread(self.refresh_layers, out)
+            self.call_from_thread(self.message, f"World generated in {out}")
+        finally:
+            self.call_from_thread(self.enable_generate)
 
+    def enable_generate(self) -> None:
+        self.query_one("#generate", Button).disabled = False
 
-def _terminal_preview(path: Path) -> None:
-    pixels, depth, _ = read_png(path)
-    width, height = shutil.get_terminal_size()
-    rows = max(1, min(pixels.shape[0], height - 3))
-    cols = max(1, min(pixels.shape[1], width))
-    sampled = pixels[
-        np.linspace(0, pixels.shape[0] - 1, rows, dtype=int)[:, None],
-        np.linspace(0, pixels.shape[1] - 1, cols, dtype=int),
-    ]
-    shades = " .:-=+*#%@"
-    indices = sampled.astype(np.uint32) * (len(shades) - 1) // ((1 << depth) - 1)
-    console.print(f"Terminal preview: {path}")
-    for row in indices:
-        console.print("".join(shades[int(i)] for i in row), highlight=False, markup=False)
+    @on(Input.Changed, "#out")
+    def output_changed(self, event: Input.Changed) -> None:
+        self.refresh_layers(
+            Path(event.value.strip()) if event.value.strip() else Path("__missing__")
+        )
 
+    def on_mount(self) -> None:
+        self.refresh_layers(Path(self.query_one("#out", Input).value))
 
-def _preview(out: Path) -> None:
-    images = [out / name for name in ("preview.png", "heightmap.png") if (out / name).is_file()]
-    if not images:
-        console.print(f"No preview images found in {out}")
-        return
-    for index, path in enumerate(images, 1):
-        console.print(f"{index}. {path.name}")
-    choice = input("Choose an image (or back): ").strip()
-    if not choice.isdigit() or not 1 <= int(choice) <= len(images):
-        return
-    path = images[int(choice) - 1]
-    mode = input("1. Terminal preview  2. System viewer  (or back): ").strip()
-    try:
-        if mode == "1":
-            _terminal_preview(path)
-        elif mode == "2":
-            _open_image(path)
-    except (OSError, ValueError, subprocess.SubprocessError) as error:
-        console.print(f"[red]Cannot preview {path}: {error}[/red]")
+    def refresh_layers(self, out: Path) -> None:
+        names = [
+            (label, name)
+            for label, name in (
+                ("Terrain preview", "preview.png"),
+                ("Heightmap", "heightmap.png"),
+                ("Water categories", "water.png"),
+            )
+            if (out / name).is_file()
+        ]
+        select = self.query_one("#layer", Select)
+        select.set_options(names)
+        select.value = names[0][1] if names else Select.BLANK
+
+    @on(Button.Pressed, "#show-preview")
+    def show_preview(self) -> None:
+        path = Path(self.query_one("#out", Input).value.strip()) / str(
+            self.query_one("#layer", Select).value
+        )
+        try:
+            pixels, depth, _ = read_png(path)
+            rows = min(pixels.shape[0], 20)
+            cols = min(pixels.shape[1], max(1, self.size.width - 4), 100)
+            sampled = pixels[
+                np.linspace(0, pixels.shape[0] - 1, rows, dtype=int)[:, None],
+                np.linspace(0, pixels.shape[1] - 1, cols, dtype=int),
+            ]
+            shades = " .:-=+*#%@"
+            if path.name == "water.png":
+                shades = " .o#"
+                indices = sampled
+            else:
+                indices = sampled.astype(np.uint32) * (len(shades) - 1) // ((1 << depth) - 1)
+            self.query_one("#preview", Static).update(
+                "\n".join("".join(shades[int(i)] for i in row) for row in indices)
+            )
+            self.message(f"Preview: {path}")
+        except (OSError, ValueError, IndexError) as error:
+            self.message(f"Cannot preview {path}: {error}")
+
+    @on(Button.Pressed, "#open-viewer")
+    def open_viewer(self) -> None:
+        path = Path(self.query_one("#out", Input).value.strip()) / str(
+            self.query_one("#layer", Select).value
+        )
+        self.launch_viewer(path)
+
+    @work(thread=True, group="viewer")
+    def launch_viewer(self, path: Path) -> None:
+        try:
+            if not path.is_file():
+                raise FileNotFoundError(path)
+            if sys.platform == "win32":
+                os.startfile(path)  # type: ignore[attr-defined]
+            else:
+                subprocess.run(
+                    ["open" if sys.platform == "darwin" else "xdg-open", str(path.resolve())],
+                    check=True,
+                    capture_output=True,
+                )
+            self.call_from_thread(self.message, f"Opened {path}")
+        except (OSError, subprocess.SubprocessError) as error:
+            self.call_from_thread(self.message, f"Cannot open {path}: {error}")
 
 
 def run() -> None:
-    """Run the keyboard-driven menu in an interactive terminal."""
+    """Run the interactive interface in a terminal."""
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         raise click.UsageError("Interactive mode requires a terminal; use generate with flags.")
-    values = {name: spec[3] for name, spec in FIELDS.items()}
-    try:
-        while True:
-            console.print("\n[bold cyan]Pixel World Generator[/bold cyan]")
-            console.print("1. Configure and generate\n2. Preview output\n0. Exit")
-            choice = input("Choose an action: ").strip()
-            if choice == "0":
-                return
-            if choice == "1":
-                _configure(values)
-            elif choice == "2":
-                _preview(values["out"])
-            else:
-                console.print("[red]Choose 0, 1 or 2.[/red]")
-    except (EOFError, KeyboardInterrupt):
-        console.print("\nCancelled.")
+    WorldApp().run()

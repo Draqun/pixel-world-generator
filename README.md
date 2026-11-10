@@ -16,25 +16,24 @@ Same seed + same generator version = same world.
 ## Usage
 
 ```sh
-make generate SEED=42 SIZE=256          # writes out/heightmap.png, preview.png, metadata.json
+make generate SEED=42 SIZE=256          # writes terrain, water and metadata layers
 make generate SEED=42 OUT=out/island42  # SIZE defaults to 1024
-make generate SEED=42 SIZE=256 ARGS="--island-warp 0.5 --erosion-iterations 5"
-make interactive                       # edit parameters and preview a world
+make interactive                       # configure and preview with a terminal form
+make generate SEED=42 ARGS="--sea-level 0.3 --river-threshold 128"
 ```
 
-`make interactive` opens a keyboard menu. Choose a parameter by name, enter its value, then
-select `generate`; settings remain available for another run. Existing output requires
-confirmation before replacement. Preview an image in the terminal or open the system image viewer;
-terminal previews are scaled and use monochrome characters. The terminal and viewer must be
-available on the host. For scripts, `make generate` never prompts; pass extra flags through
-`ARGS`, and use `make generate SEED=42 ARGS=--help` to list them.
-
 `--seed` is required. `--height-range` (default 400) is how many metres the full 16-bit range
-spans; it is only recorded in `metadata.json` and does not change any pixel. Same seed, generator version and parameters give byte-identical files on the
+spans; it affects water depths but not terrain pixels. Same seed, generator version and parameters give byte-identical files on the
 same platform; `metadata.json` records the seed, generator version and every parameter.
 `heightmap.png` is 16-bit grayscale, 1 px = 1 m; `heightmap.r16` holds the same values as a
 headerless little-endian uint16 raw file (row-major, top row first), the format Godot terrain addons
 import as R16/RAW; `preview.png` is the same image in 8 bits.
+
+`make interactive` opens a keyboard- and mouse-accessible form. Tab moves between fields;
+choose a size preset or enter a custom size, enter a seed, and review the explained settings.
+Select Generate to review the seed, size and output path before writing; existing generated files
+require explicit confirmation before replacement. The layer selector offers existing terrain and
+water images for terminal preview or opening in the system viewer. Generation runs in the background.
 
 ## Terrain
 
@@ -86,15 +85,17 @@ gh release create v0.1.0 dist/* --verify-tag --title v0.1.0 --notes-file release
 If the release already exists but an upload failed, attach the missing files with
 `gh release upload v0.1.0 dist/*` instead. Do not rerun the full workflow or move the tag.
 
-## License
-
-MIT, see `LICENSE`.
+## Water
 
 The water datum defaults to `sea_level=0.2`, a fraction of `height_range_m` in the
 range [0, 1). Metadata records `sea_level_m` in metres above the encoded height
 minimum; sea-relative elevation is height in metres minus this datum. The default
 `min_lake_depth_m=1.0` is a minimum retained depth in metres (non-negative).
-These parameters are recorded now; the water layer and CLI controls follow in a later slice.
+`water.png` is an aligned 8-bit grayscale category layer: 0 dry, 1 sea, 2 lake,
+3 river. Metadata records this legend and all controls. Set the datum and lake
+depth with `--sea-level` and `--min-lake-depth`; set the positive integer river
+threshold in square metres and maximum width in pixels with `--river-threshold`
+and `--max-river-width`. Pass these options through `ARGS` as shown above.
 
 River centrelines start at a contributing area of 256 m² by default. Each cell
 counts itself and all upstream cells exactly. The display widens channels in
@@ -112,3 +113,7 @@ NumPy 2.3.3, default parameters (peak RSS covers the complete process):
 | --- | ---: | ---: | ---: |
 | 1024 | 11.65 s | 6.13 s | 131.0 MiB |
 | 2048 | 52.81 s | 24.38 s | 398.7 MiB |
+
+## License
+
+MIT, see `LICENSE`.

@@ -6,7 +6,7 @@ The existing command requires users to remember options and find generated image
 
 ## What Changes
 
-- Introduce a Typer-based interactive menu for choosing implemented actions, configuring generation and inspecting generated layers.
+- Introduce a Typer command and Textual terminal form for configuring generation and inspecting generated layers with keyboard or mouse.
 - Provide previews both inside the terminal and in the system image viewer, with useful fallbacks when unavailable.
 - Make parameter selection and repeated generation easy, with all interactive generation settings also available through non-interactive flags.
 - Preserve the existing non-interactive generate command, output formats and determinism guarantees.

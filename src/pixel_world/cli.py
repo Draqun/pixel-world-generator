@@ -1,38 +1,26 @@
 """Command line: `python -m pixel_world generate --seed N`."""
 
-import json
 from collections.abc import Sequence
 from pathlib import Path
 
 import click
-import numpy as np
 import typer
 
-from pixel_world import __version__
 from pixel_world.params import Params
-from pixel_world.png import write_png8, write_png16
 from pixel_world.terrain import generate_terrain
-
-
-def _metadata(params: Params) -> str:
-    fields = params.to_dict()
-    meta = {
-        "generator_version": __version__,
-        "seed": fields.pop("seed"),
-        "params": fields,
-        "sea_level_m": params.sea_level * params.height_range_m,
-    }
-    return json.dumps(meta, sort_keys=True, indent=2) + "\n"
+from pixel_world.water import accumulation, drainage, rivers
+from pixel_world.writer import write_world
 
 
 def generate(params: Params, out: Path) -> None:
     height = generate_terrain(params)
-    preview = ((height.astype(np.uint32) + 128) // 257).astype(np.uint8)  # round(h / 257)
-    out.mkdir(parents=True, exist_ok=True)
-    write_png16(out / "heightmap.png", height)
-    (out / "heightmap.r16").write_bytes(height.astype("<u2").tobytes())
-    write_png8(out / "preview.png", preview)
-    (out / "metadata.json").write_text(_metadata(params), encoding="utf-8")
+    sea, lake, _, targets = drainage(
+        height, params.sea_level, params.height_range_m, params.min_lake_depth_m
+    )
+    _, water = rivers(
+        accumulation(targets), sea, lake, params.river_threshold, params.max_river_width
+    )
+    write_world(out, height, water, params)
 
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
@@ -49,6 +37,10 @@ def generate_command(
     erosion_strength: float = typer.Option(Params.erosion_strength),
     erosion_talus: float = typer.Option(Params.erosion_talus),
     height_range: float = typer.Option(Params.height_range_m),
+    sea_level: float = typer.Option(Params.sea_level),
+    min_lake_depth: float = typer.Option(Params.min_lake_depth_m),
+    river_threshold: int = typer.Option(Params.river_threshold),
+    max_river_width: int = typer.Option(Params.max_river_width),
     out: Path = DEFAULT_OUT,
 ) -> None:
     """Generate a terrain heightmap."""
@@ -63,6 +55,10 @@ def generate_command(
             erosion_strength=erosion_strength,
             erosion_talus=erosion_talus,
             height_range_m=height_range,
+            sea_level=sea_level,
+            min_lake_depth_m=min_lake_depth,
+            river_threshold=river_threshold,
+            max_river_width=max_river_width,
         )
     except ValueError as error:
         raise click.BadParameter(str(error)) from error
@@ -92,4 +88,3 @@ def main(argv: Sequence[str] | None = None) -> int:
         error.show()
         raise SystemExit(error.exit_code) from error
     return result if isinstance(result, int) else 0
-    return 0

@@ -7,11 +7,11 @@ Provide an approachable terminal workflow for configuring and inspecting generat
 ## ADDED Requirements
 
 ### Requirement: Interactive menu
-The application SHALL provide an explicit interactive entry point with a readable menu navigable by keyboard, offering generation, output inspection and exit.
+The application SHALL provide an explicit interactive entry point with a readable form navigable by keyboard and mouse, offering editable values, a size selector, generation, output inspection and exit.
 
 #### Scenario: Start and exit
 - **WHEN** the user starts the interactive interface in a terminal
-- **THEN** available actions and instructions are displayed
+- **THEN** available controls, values and instructions are displayed
 - **AND** the user can return to the menu or exit without generating files
 
 #### Scenario: Non-interactive input

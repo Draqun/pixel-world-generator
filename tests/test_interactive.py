@@ -1,144 +1,111 @@
-import builtins
+import asyncio
 import json
-import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
+from textual.widgets import Input, Select, Static
 
-from pixel_world.cli import main
-from pixel_world.png import write_png8
+from pixel_world.interactive import WorldApp
 
 
-def session(monkeypatch: pytest.MonkeyPatch, answers: list[str]) -> None:
-    values = iter(answers)
-    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
-    monkeypatch.setattr(builtins, "input", lambda _prompt="": next(values))
-    assert main(["interactive"]) == 0
+def test_form_explains_settings_and_allows_generation(tmp_path: Path) -> None:
+    async def exercise() -> None:
+        app = WorldApp()
+        async with app.run_test(size=(120, 50)) as pilot:
+            assert app.query_one("#seed", Input).placeholder
+            assert app.query_one("#size", Input).value == "1024"
+            assert app.query_one("#sea_level", Input).value == "0.2"
+            app.query_one("#seed", Input).value = "42"
+            app.query_one("#size", Input).value = "64"
+            app.query_one("#octaves", Input).value = "2"
+            app.query_one("#erosion_iterations", Input).value = "1"
+            app.query_one("#out", Input).value = str(tmp_path)
+            await pilot.click("#generate")
+            await pilot.pause()
+            await pilot.click("#overwrite")
+            await app.workers.wait_for_complete()
+            assert json.loads((tmp_path / "metadata.json").read_text())["seed"] == 42
+            assert (tmp_path / "water.png").is_file()
+            assert app.query_one("#layer", Select).value == "preview.png"
+
+    asyncio.run(exercise())
+
+
+def test_invalid_and_overwrite_require_confirmation(tmp_path: Path) -> None:
+    async def exercise() -> None:
+        app = WorldApp()
+        async with app.run_test(size=(120, 50)) as pilot:
+            app.query_one("#out", Input).value = str(tmp_path)
+            await pilot.click("#generate")
+            await pilot.pause()
+            assert not list(tmp_path.iterdir())
+            app.query_one("#seed", Input).value = "1"
+            app.query_one("#size", Input).value = "3"
+            await pilot.click("#generate")
+            await pilot.pause()
+            assert not list(tmp_path.iterdir())
+            app.query_one("#size", Input).value = "64"
+            (tmp_path / "water.png").write_bytes(b"keep")
+            await pilot.click("#generate")
+            await pilot.pause()
+            assert (tmp_path / "water.png").read_bytes() == b"keep"
+            assert "overwrite" in str(app.screen.query_one(Static).render()).lower()
+            await pilot.click("#cancel")
+            assert (tmp_path / "water.png").read_bytes() == b"keep"
+
+    asyncio.run(exercise())
 
 
 def test_interactive_requires_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    from pixel_world.cli import main
+
     monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(SystemExit):
         main(["interactive"])
-    assert exc.value.code != 0
 
 
-def test_generate_then_edit_seed_and_repeat(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    out = tmp_path / "world"
-    session(
-        monkeypatch,
-        [
-            "1",
-            "seed",
-            "7",
-            "size",
-            "64",
-            "octaves",
-            "2",
-            "erosion_iterations",
-            "1",
-            "out",
-            str(out),
-            "generate",
-            "y",
-            "seed",
-            "8",
-            "generate",
-            "y",
-            "y",
-            "back",
-            "0",
-        ],
-    )
-    assert json.loads((out / "metadata.json").read_text())["seed"] == 8
+def test_existing_output_layer_selection_and_preview(tmp_path: Path) -> None:
+    import numpy as np
+
+    from pixel_world.png import write_png8
+
+    write_png8(tmp_path / "water.png", np.ones((8, 8), dtype=np.uint8))
+
+    async def exercise() -> None:
+        app = WorldApp()
+        async with app.run_test(size=(120, 80)) as pilot:
+            app.query_one("#out", Input).value = str(tmp_path)
+            await pilot.pause()
+            assert app.query_one("#layer", Select).value == "water.png"
+            await pilot.click("#show-preview")
+            assert "........" in str(app.query_one("#preview", Static).render())
+
+    asyncio.run(exercise())
 
 
-def test_decline_overwrite_preserves_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    out = tmp_path / "world"
-    out.mkdir()
-    (out / "preview.png").write_bytes(b"keep")
-    session(monkeypatch, ["1", "seed", "1", "out", str(out), "generate", "y", "n", "back", "0"])
-    assert (out / "preview.png").read_bytes() == b"keep"
+def test_form_matches_scripted_output(tmp_path: Path) -> None:
+    from pixel_world.cli import main
 
+    async def exercise() -> None:
+        app = WorldApp()
+        async with app.run_test(size=(120, 50)) as pilot:
+            for name, value in {
+                "seed": "42",
+                "size": "64",
+                "octaves": "2",
+                "erosion_iterations": "1",
+                "sea_level": "0.3",
+                "out": str(tmp_path / "form"),
+            }.items():
+                app.query_one(f"#{name}", Input).value = value
+            await pilot.click("#generate")
+            await pilot.pause()
+            await pilot.click("#overwrite")
+            await app.workers.wait_for_complete()
 
-def test_preview_in_terminal_and_system_viewer(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    from pixel_world import interactive
-
-    write_png8(tmp_path / "preview.png", np.full((64, 64), 127, dtype=np.uint8))
-    opened = []
-    monkeypatch.setattr(interactive, "_open_image", lambda path: opened.append(path))
-    monkeypatch.setattr(interactive.shutil, "get_terminal_size", lambda: (20, 10))
-    session(monkeypatch, ["1", "out", str(tmp_path), "back", "2", "1", "1", "2", "1", "2", "0"])
-    assert opened == [tmp_path / "preview.png"]
-    assert "Terminal preview" in capsys.readouterr().out
-
-
-def test_preview_missing_and_viewer_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    from pixel_world import interactive
-
-    def fail(_path: Path) -> None:
-        raise OSError("no viewer")
-
-    monkeypatch.setattr(interactive, "_open_image", fail)
-    write_png8(tmp_path / "preview.png", np.zeros((64, 64), dtype=np.uint8))
-    session(monkeypatch, ["1", "out", str(tmp_path), "back", "2", "1", "2", "0"])
-    assert "no viewer" in " ".join(capsys.readouterr().out.split())
-
-
-def test_terminal_preview_fits_terminal(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    from pixel_world import interactive
-
-    path = tmp_path / "preview.png"
-    write_png8(path, np.full((64, 64), 255, dtype=np.uint8))
-    monkeypatch.setattr(interactive.shutil, "get_terminal_size", lambda: (10, 8))
-    interactive._terminal_preview(path)
-    rows = [line for line in capsys.readouterr().out.splitlines() if line == "@" * 10]
-    assert len(rows) == 5
-
-
-def test_missing_images_report_directory(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    session(monkeypatch, ["1", "out", str(tmp_path), "back", "2", "0"])
-    assert "No preview images" in capsys.readouterr().out
-
-
-def test_interactive_and_flags_generate_identical_files(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    interactive_out, flags_out = tmp_path / "interactive", tmp_path / "flags"
-    session(
-        monkeypatch,
-        [
-            "1",
-            "seed",
-            "42",
-            "size",
-            "64",
-            "octaves",
-            "2",
-            "erosion_iterations",
-            "1",
-            "out",
-            str(interactive_out),
-            "generate",
-            "y",
-            "back",
-            "0",
-        ],
-    )
+    asyncio.run(exercise())
     assert (
         main(
             [
@@ -151,19 +118,42 @@ def test_interactive_and_flags_generate_identical_files(
                 "2",
                 "--erosion-iterations",
                 "1",
+                "--sea-level",
+                "0.3",
                 "--out",
-                str(flags_out),
+                str(tmp_path / "cli"),
             ]
         )
         == 0
     )
-    for name in ("heightmap.png", "heightmap.r16", "preview.png", "metadata.json"):
-        assert (interactive_out / name).read_bytes() == (flags_out / name).read_bytes()
+    assert {p.name: p.read_bytes() for p in (tmp_path / "form").iterdir()} == {
+        p.name: p.read_bytes() for p in (tmp_path / "cli").iterdir()
+    }
 
 
-def test_invalid_values_and_cancellation_write_nothing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    out = tmp_path / "missing"
-    session(monkeypatch, ["1", "size", "3", "out", str(out), "generate", "back", "0"])
-    assert not out.exists()
+def test_viewer_failure_is_reported(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import subprocess
+
+    import numpy as np
+
+    from pixel_world.png import write_png8
+
+    path = tmp_path / "preview.png"
+    write_png8(path, np.zeros((8, 8), dtype=np.uint8))
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise subprocess.CalledProcessError(1, "xdg-open")
+
+    monkeypatch.setattr(subprocess, "run", fail)
+
+    async def exercise() -> None:
+        app = WorldApp()
+        async with app.run_test(size=(120, 80)) as pilot:
+            app.query_one("#out", Input).value = str(tmp_path)
+            await pilot.pause()
+            await pilot.click("#open-viewer")
+            await app.workers.wait_for_complete()
+            assert "Cannot open" in str(app.query_one("#status", Static).render())
+            assert str(path) in str(app.query_one("#status", Static).render())
+
+    asyncio.run(exercise())

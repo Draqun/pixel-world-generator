@@ -1,12 +1,13 @@
 [project]
 name = "pixel-world-generator"
-version = "0.3.0"
+version = "0.4.0"
 description = "Seeded world map generator: 1 px = 1 m"
 requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
     "numpy==2.3.3",
+    "textual==6.5.0",
     "typer==0.16.1",
 ]
 
