@@ -19,10 +19,10 @@ and ship no downstream layer that claims unsupported planet-scale correctness.
 
 ## 2. Geographic choices and overview
 
-- [ ] 2.1 Add independent extent and geographic intent selection, including region-first island,
+- [x] 2.1 Add independent extent and geographic intent selection, including region-first island,
   peninsula, continent and local area; verify deterministic documented reference fixtures and a
   peninsula's land connection without a forced island boundary.
-- [ ] 2.2 Generate a bounded-resolution world overview with explicit projection, physical scale,
+- [x] 2.2 Generate a bounded-resolution world overview with explicit projection, physical scale,
   reference sample positions and unresolved-detail semantics; test deterministic hashes and
   selection-to-coordinate round trips for both geometries and a 16-million-metre flat world.
   Document the anchor lattice before implementation so generating overview before or after

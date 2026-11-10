@@ -124,16 +124,16 @@ MIT, see `LICENSE`.
 
 ## World project foundation
 
-The first world-project slice provides a Python API, persisted definitions and coordinate
-conversions. Overview generation, regional terrain exports and their CLI remain planned. The
+The world-project API provides persisted definitions, coordinate conversions and coarse overviews.
+Regional terrain exports and the world/region CLI remain planned. The
 existing `make generate` and `make interactive` workflows still generate standalone islands.
 
 A project contains:
 
 - `world.json`: the immutable definition and its SHA-256 `world_id`. It records the seed,
-  generator/schema/coordinate versions, geometry, metre dimensions or radius, explicit geography,
+  generator/schema/coordinate versions, geometry, metre dimensions or radius, starting extent and geography,
   vertical minimum/range, absolute sea datum, overview resolution and numeric generation parameters.
-  Parameters are persisted configuration; this slice does not interpret them as a terrain algorithm.
+  Numeric parameters remain reserved configuration; the current coarse field has fixed, versioned rules.
 - `coverage.json`: separately versioned, canonically ordered completed areas and relative artifact
   paths with SHA-256 hashes. Adding coverage checks completed artifact hashes, preserves existing
   records and atomically replaces only this index. An area's own metadata will locate its bounds
@@ -164,7 +164,7 @@ The `bounded` boundary field is unused for spheres; spheres have no physical bou
 worlds accept `bounded` or east-west periodic `wrap_x`; y never wraps. Flat positions are in
 half-open `[0, width_m)` and `[0, height_m)` intervals, with origin at top left, x right and y down.
 Geography must be explicit (`world`, `region`, `island`, `peninsula` or `continent`); it is recorded
-intent until section 2 implements its shaping rules. Project directories must be new. Loading
+intent interpreted by the coarse geography field. Project directories must be new. Loading
 with incompatible expected settings, unknown versions, incomplete definitions or invalid coverage
 fails without writing. Project writes currently require one process per project.
 
@@ -212,3 +212,72 @@ Run the foundation checks with:
 make test ARGS="tests/test_world.py tests/test_coordinates.py"
 make check
 ```
+
+
+### Coarse overview and geography
+
+`WorldDefinition.extent` records whether the starting workflow is `world` (default) or `region`.
+It is independent of physical world dimensions and `geography`: local unforced `region`, unforced
+`world`, `island`, `peninsula` or `continent`. Changing only starting extent does not change terrain.
+New projects can still be created without an overview. Geography envelopes are anchored in world
+coordinates and never fitted to the bounds of a requested export.
+
+```python
+from pixel_world.overview import generate_overview, overview_to_world, overview_scale
+from pixel_world.writer import write_overview
+
+pixels = generate_overview(project.definition)
+write_overview(Path("out/story-world"), project.definition, pixels)
+position = overview_to_world(project.definition, 10.5, 20.5)
+scale_m = overview_scale(project.definition, *position)
+```
+
+`overview/heightmap.png` is a 16-bit sample raster using the saved vertical encoding;
+`overview/metadata.json` records its projection, pixel spans, sample positions, five illustrative
+reference values, world identity and unresolved-detail limitations. Completed files are indexed
+in `coverage.json`; `world.json` and earlier regional artifacts remain unchanged. Existing overview
+directories are refused, so reference generation must use a fresh destination.
+
+For flat worlds the longest image side has `overview_resolution` samples; the other side follows
+its aspect ratio, rounded to the nearest integer with a minimum of one. Centre `(column,row)`
+samples `((column+0.5)*width_m/columns, (row+0.5)*height_m/rows)`. For spheres the raster has
+`2*resolution` columns and `resolution` rows, using equirectangular longitude/latitude projection:
+longitude `-180+360*(column+0.5)/columns`, latitude `90-180*(row+0.5)/rows`. Selections use continuous
+image coordinates from the top-left edge, so centres are at half-integers. The bottom pole maps
+to the bottom image edge; it is not a pixel centre. Longitude and pole ownership follow version 1.
+
+Spherical horizontal scale varies as cosine(latitude), collapsing at the poles; vertical scale
+is `pi*radius/rows` metres per pixel. `overview_scale` returns the physical spans at a selected
+position. The overview is not a one-metre grid. It does not resolve fine coastlines, erosion,
+drainage or regional terrain; a pixel is a reference sample, not a uniform land/sea footprint.
+Future detailed refinement must preserve every encoded centre sample using the saved definition,
+regardless of whether an overview image has been written. No per-image elevation normalization
+is applied. Heights are clipped against the shared vertical encoding, not stretched to its range.
+
+The coarse field uses six seeded waves (`world.geography`) evaluated at normalized world positions
+or unit-sphere Cartesian directions. Landform envelopes add a central island/cap, broad continent,
+or connected peninsula; region/world leave boundaries unforced. Wrapped flat envelopes remain
+periodic. The reference bounded peninsula connects to mainland through the west edge and has
+water beside its tongue and beyond its tip; this does not mark the edge of a regional export as
+a new world boundary. The spherical peninsula joins a southern-equatorial mainland near 90°W
+and extends east towards 0°. Arbitrary parameter choices are not a guarantee of any chosen coast.
+
+Reference fixtures use seed 42, default vertical/sea datum and 64 samples across a square bounded
+16-million-metre flat world; spherical fixtures use radius 6 million metres. The preview below
+samples the same field at 128 rows. Rows: unforced region, island, peninsula, continent. Columns:
+flat world, sphere. Dark is at/below the sea datum; light is above it, without computing hydrology.
+
+![Coarse geography references](docs/overview-reference.png)
+
+```sh
+make overview-reference OUT=out/example-overviews  # fresh destination; 8 saved project fixtures
+make test ARGS="tests/test_overview.py"
+```
+
+Each overview is limited to 1,048,576 samples and sampled in batches of 64 rows. Larger configured
+rasters fail before generation or writes with a request to lower resolution. Physical extent
+never allocates a metre-scale world raster. A reference run produced all eight 128-row fixtures
+in about 0.1 seconds; timings depend on the machine. Schema 2 adds starting extent and generator
+0.5.0 introduces coarse geography. Earlier foundation manifests require their recorded generator;
+there is no automatic migration. Existing standalone terrain and water sample hashes are preserved;
+only their recorded generator version changes.

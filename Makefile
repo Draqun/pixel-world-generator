@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 export OPENSPEC_TELEMETRY := 0
 
-.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark
+.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark overview-reference
 
 SIZE ?= 1024
 OUT ?= out
@@ -58,3 +58,6 @@ build: ## Build wheel and source distribution in dist/
 water-benchmark: ## Benchmark seed 42 water at 1024 and 2048; save diagnostic previews
 	uv run python scripts/benchmark_water.py 1024 --preview $(OUT)/water-preview-1024.png
 	uv run python scripts/benchmark_water.py 2048 --preview $(OUT)/water-preview-2048.png
+
+overview-reference: ## Generate new seed-42 overview reference projects (choose a fresh OUT)
+	uv run python scripts/overview_reference.py $(OUT)/overview-reference

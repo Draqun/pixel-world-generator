@@ -1,0 +1,1 @@
+Add independent starting extent and geography choices, deterministic bounded world overviews with recorded projections and physical scale, reference sample coordinates and coarse-landform fixtures. Bump generator to 0.5.0 and project schema to 2; regional terrain exports remain planned.

@@ -112,6 +112,41 @@ pipeline already works at planetary scale.
 - This slice adds a Python foundation API and tests. Make-accessible world/region user commands
   remain section 4. Existing terrain algorithms and output version are unchanged.
 
+## Section 2 sampling contract (defined before implementation)
+
+- Persist `extent` (`world` or `region`) independently of `geography` and physical dimensions.
+  It records the starting workflow and never changes terrain samples. Geography uses deterministic
+  world-space envelopes for island, peninsula and continent, or unforced terrain for region/world.
+  No envelope is fitted to the first requested output. Reference geography uses seed 42, default
+  vertical datum and 64 samples across a square bounded flat world; spherical references use the
+  same seed and a six-million-metre radius. Guarantees apply to these documented fixtures.
+- For flat overviews, the longest image side has `overview_resolution` samples; round the other
+  side to the nearest integer, with a minimum of one. Anchor `(column,row)` samples the centre
+  `((column+0.5)*width_m/columns, (row+0.5)*height_m/rows)`. The overview covers the whole definition,
+  regardless of starting extent. For spheres use `2*resolution` columns and `resolution` rows in
+  equirectangular projection; centre samples are longitude `-180+360*(column+0.5)/columns` and
+  latitude `90-180*(row+0.5)/rows`. Pixel selections use continuous image-edge coordinates.
+- The coarse field is a fixed seeded sum of six sinusoidal waves in normalized flat coordinates
+  or unit-sphere Cartesian coordinates, with a separate `world.geography` stream and analytic
+  landform envelopes. Integer planar frequencies make the unforced noise periodic in x. Sphere
+  envelopes use Cartesian directions/geodesic angles, so no longitude seam becomes a coastline.
+  Quantize clipped fractions directly to uint16 in the saved vertical encoding, never normalize
+  the overview's minimum and maximum. No erosion or detailed residual is applied in this slice.
+- All centre samples are reference anchors, available from the saved definition without an
+  overview image. Later regional refinement must preserve their encoded values; it must not
+  resample a PNG or independently choose a new coarse field. Five explicit metadata references
+  illustrate the lattice; metadata gives formulas for every other sample and marks unresolved
+  coastlines/fine detail. This slice does not implement section 3's hierarchical refinement.
+- Limit each overview to 1,048,576 samples and process rows in batches of 64. Reject larger
+  configured rasters before generation or writes, independent of total physical world area.
+  Record metre pixel spans for flat maps; for spheres record angular spans, north-south metre
+  scale and east-west scale varying as cosine(latitude), with projection distortion disclosed.
+- Export a 16-bit overview and JSON metadata in a new `overview/` directory, then register their
+  hashes in coverage. Refuse an existing output rather than overwrite earlier project artifacts.
+  World/region CLI integration remains section 4. Schema 2 adds extent; generator 0.5.0 introduces
+  the coarse field, retaining standalone terrain/water samples and deliberately updating version
+  metadata. Previous foundation manifests require their recorded generator; no implicit migration.
+
 ## Risks / Trade-offs
 
 - [Spherical grids cannot preserve all metre distances globally] → record projection and measured
