@@ -18,6 +18,8 @@ def test_defaults() -> None:
         "height_range_m": 400.0,
         "sea_level": 0.2,
         "min_lake_depth_m": 1.0,
+        "river_threshold": 256,
+        "max_river_width": 9,
     }
 
 
@@ -65,5 +67,20 @@ def test_size_bounds_accepted(size: int) -> None:
     ],
 )
 def test_invalid_water_controls(name: str, value: float) -> None:
+    with pytest.raises(ValueError):
+        Params(seed=1, **{name: value})
+
+
+@pytest.mark.parametrize(
+    "name,value",
+    [
+        ("river_threshold", 0),
+        ("river_threshold", 1.5),
+        ("river_threshold", True),
+        ("max_river_width", 0),
+        ("max_river_width", -1),
+    ],
+)
+def test_invalid_river_controls(name: str, value: object) -> None:
     with pytest.raises(ValueError):
         Params(seed=1, **{name: value})

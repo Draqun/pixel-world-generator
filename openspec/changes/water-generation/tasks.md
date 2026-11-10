@@ -10,8 +10,8 @@ starting the next section. Run make check for each section and add its changelog
 
 ## 2. Catchments and river geometry
 
-- [ ] 2.1 Add exact D8 contributing-area accumulation, thresholded river centrelines and bounded widening; verify branching catchments, flat routing, outlet reachability, width ordering, category precedence and empty river output.
-- [ ] 2.2 Document the channel approximation and record reference timings/peak memory for 1024 and 2048 through a Make target; verify a seed-42 preview by inspection and retain exact catchment tests without replacing them with bounded erosion sweeps.
+- [x] 2.1 Add exact D8 contributing-area accumulation, thresholded river centrelines and bounded widening; verify branching catchments, flat routing, outlet reachability, width ordering, category precedence and empty river output.
+- [x] 2.2 Document the channel approximation and record reference timings/peak memory for 1024 and 2048 through a Make target; verify a seed-42 preview by inspection and retain exact catchment tests without replacing them with bounded erosion sweeps.
 
 ## 3. Layer outputs and CLI integration
 

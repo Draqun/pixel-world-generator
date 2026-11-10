@@ -56,3 +56,61 @@ def drainage(
                 heapq.heappush(heap, (float(filled.flat[j]), j))
     lake = ~sea & (filled > ground) & ((filled - ground) >= min_lake_depth_m)
     return sea, lake, filled, targets
+
+
+def accumulation(targets: NDArray[np.int64]) -> NDArray[np.int64]:
+    """Count every upstream cell once, in topological order."""
+    flat = targets.ravel()
+    incoming = np.bincount(flat[flat >= 0], minlength=flat.size)
+    area = np.ones(flat.size, dtype=np.int64)
+    queue = np.empty(flat.size, dtype=np.int64)
+    leaves = np.flatnonzero(incoming == 0)
+    tail = len(leaves)
+    queue[:tail] = leaves
+    head = 0
+    while head < tail:
+        i = queue[head]
+        head += 1
+        target = flat[i]
+        if target >= 0:
+            area[target] += area[i]
+            incoming[target] -= 1
+            if incoming[target] == 0:
+                queue[tail] = target
+                tail += 1
+    if tail != flat.size:
+        raise ValueError("drainage targets contain a cycle")
+    return area.reshape(targets.shape)
+
+
+def rivers(
+    area: NDArray[np.int64],
+    sea: NDArray[np.bool_],
+    lake: NDArray[np.bool_],
+    threshold: int = 256,
+    max_width: int = 9,
+) -> tuple[NDArray[np.bool_], NDArray[np.uint8]]:
+    """Return thresholded centrelines and widened categorical water."""
+    centre = area >= threshold
+    max_radius = (max_width - 1) // 2
+    radius = np.zeros(area.shape, dtype=np.uint8)
+    radius[centre] = np.minimum(
+        np.floor(np.log2(area[centre] / threshold)).astype(np.int64), max_radius
+    )
+    river = centre.copy()
+    rows, cols = area.shape
+    for dy in range(-max_radius, max_radius + 1):
+        for dx in range(-max_radius, max_radius + 1):
+            distance = int(np.ceil(np.hypot(dy, dx)))
+            if distance == 0 or distance > max_radius or abs(dy) >= rows or abs(dx) >= cols:
+                continue
+            src_y = slice(max(0, -dy), min(rows, rows - dy))
+            src_x = slice(max(0, -dx), min(cols, cols - dx))
+            dst_y = slice(max(0, dy), min(rows, rows + dy))
+            dst_x = slice(max(0, dx), min(cols, cols + dx))
+            river[dst_y, dst_x] |= centre[src_y, src_x] & (radius[src_y, src_x] >= distance)
+    water = np.zeros(area.shape, dtype=np.uint8)
+    water[river] = 3
+    water[lake] = 2
+    water[sea] = 1
+    return centre, water
