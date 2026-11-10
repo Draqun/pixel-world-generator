@@ -1,0 +1,1 @@
+Add immutable, versioned flat and spherical world projects with resumable manifests, separate canonical coverage indexes, cube-sphere coordinates and bounded-distortion local projection helpers. Regional terrain and overview generation remain planned.

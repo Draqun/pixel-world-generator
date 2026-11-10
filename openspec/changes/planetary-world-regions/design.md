@@ -93,6 +93,25 @@ pipeline already works at planetary scale.
   command. The project workflow requires an explicit recorded geography choice.
   Follow terrain → water → biomes → settlements → roads → borders, one tasks section per PR.
 
+## Section 1 implementation decisions
+
+- `world.json` contains the complete definition and its content-derived SHA-256 identity;
+  `coverage.json` separately indexes completed area IDs and relative artifact hashes. Artifact
+  metadata will carry area bounds/projections in section 3. The definition's numeric parameter
+  pairs are immutable and canonicalized; this slice stores them without inventing terrain rules.
+- Coordinate convention version 1 fixes the flat origin at `(0,0)`, x right/y down, and uses
+  half-open bounds with only x periodic when requested. Spheres record radius and have no edge.
+  The cube-sphere orientation table and x-before-y-before-z seam ownership are in README.md.
+- Local spherical conversions use a world-anchored azimuthal equidistant grid. Tangential scale
+  error is `(d/R)/sin(d/R) - 1`; reject above 1%. An export must test its farthest corner and
+  keep the same anchor for all partitions. No single global square grid is promised.
+- Project creation refuses existing directories; load rejects missing fields, unsupported versions,
+  identity mismatches and incompatible overrides. Coverage publication verifies artifact hashes,
+  refuses removal/replacement of old records, and atomically replaces only its index. Writes
+  require one process per project; parallel writers will need locking before they are supported.
+- This slice adds a Python foundation API and tests. Make-accessible world/region user commands
+  remain section 4. Existing terrain algorithms and output version are unchanged.
+
 ## Risks / Trade-offs
 
 - [Spherical grids cannot preserve all metre distances globally] → record projection and measured
