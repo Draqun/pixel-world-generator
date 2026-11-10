@@ -114,6 +114,12 @@ same module's reader helper (header + IDAT inflate) to check dimensions, bit dep
 `generator_version` (`pixel_world.__version__`, bumped to `0.1.0`), `seed`, and a `params` object
 with every field of `Params`. No timestamps.
 
+### Raw export and vertical scale
+
+`heightmap.r16` is `height.astype('<u2').tobytes()`: the format Godot terrain addons read as
+R16/RAW. `height_range_m` is a `Params` field that only the metadata carries; terrain generation
+ignores it, because heights stay normalised and the metre scale belongs to the consumer.
+
 ### CLI
 
 `python -m pixel_world generate --seed N [--size 1024] [--out out/] [--octaves ...]
