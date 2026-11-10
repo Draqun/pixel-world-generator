@@ -5,7 +5,10 @@ description = "Seeded world map generator: 1 px = 1 m"
 requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["numpy==2.3.3"]
+dependencies = [
+    "numpy==2.3.3",
+    "typer==0.16.1",
+]
 
 [dependency-groups]
 dev = [

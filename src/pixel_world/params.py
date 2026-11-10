@@ -47,6 +47,8 @@ class Params:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ValueError(f"{name} must be a number, got {value!r}")
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
         if not math.isfinite(self.sea_level) or not 0 <= self.sea_level < 1:
             raise ValueError("sea_level must be finite and in [0, 1)")
         if not math.isfinite(self.min_lake_depth_m) or self.min_lake_depth_m < 0:

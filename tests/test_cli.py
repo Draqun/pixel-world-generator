@@ -41,6 +41,12 @@ def test_default_size_is_1024() -> None:
     assert Params(seed=1).size == 1024
 
 
+def test_terrain_parameters_are_available_as_flags(tmp_path: Path) -> None:
+    assert run(tmp_path, "--seed", "1", *FAST, "--island-warp", "0.5") == 0
+    meta = json.loads((tmp_path / "metadata.json").read_text())
+    assert meta["params"]["island_warp"] == 0.5
+
+
 def test_metadata_records_run_including_defaults(tmp_path: Path) -> None:
     run(tmp_path, "--seed", "7", "--octaves", "3", "--size", "64", "--erosion-iterations", "1")
     meta = json.loads((tmp_path / "metadata.json").read_text())
@@ -98,6 +104,7 @@ def test_different_seeds_differ(tmp_path: Path) -> None:
         ["--seed", "1", "--size", "8193"],
         ["--seed", "1", "--height-range", "0"],
         ["--seed", "1", "--height-range", "-1"],
+        ["--seed", "1", "--island-exponent", "nan"],
     ],
 )
 def test_bad_input_exits_nonzero_and_writes_nothing(tmp_path: Path, args: list[str]) -> None:

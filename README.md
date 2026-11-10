@@ -18,7 +18,16 @@ Same seed + same generator version = same world.
 ```sh
 make generate SEED=42 SIZE=256          # writes out/heightmap.png, preview.png, metadata.json
 make generate SEED=42 OUT=out/island42  # SIZE defaults to 1024
+make generate SEED=42 SIZE=256 ARGS="--island-warp 0.5 --erosion-iterations 5"
+make interactive                       # edit parameters and preview a world
 ```
+
+`make interactive` opens a keyboard menu. Choose a parameter by name, enter its value, then
+select `generate`; settings remain available for another run. Existing output requires
+confirmation before replacement. Preview an image in the terminal or open the system image viewer;
+terminal previews are scaled and use monochrome characters. The terminal and viewer must be
+available on the host. For scripts, `make generate` never prompts; pass extra flags through
+`ARGS`, and use `make generate SEED=42 ARGS=--help` to list them.
 
 `--seed` is required. `--height-range` (default 400) is how many metres the full 16-bit range
 spans; it is only recorded in `metadata.json` and does not change any pixel. Same seed, generator version and parameters give byte-identical files on the

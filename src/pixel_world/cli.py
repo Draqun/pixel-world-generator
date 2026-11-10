@@ -1,11 +1,12 @@
 """Command line: `python -m pixel_world generate --seed N`."""
 
-import argparse
 import json
 from collections.abc import Sequence
 from pathlib import Path
 
+import click
 import numpy as np
+import typer
 
 from pixel_world import __version__
 from pixel_world.params import Params
@@ -34,27 +35,61 @@ def generate(params: Params, out: Path) -> None:
     (out / "metadata.json").write_text(_metadata(params), encoding="utf-8")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="pixel_world")
-    sub = parser.add_subparsers(dest="command", required=True)
-    gen = sub.add_parser("generate", help="generate a terrain heightmap")
-    gen.add_argument("--seed", type=int, required=True)
-    gen.add_argument("--size", type=int, default=Params.size)
-    gen.add_argument("--octaves", type=int, default=Params.octaves)
-    gen.add_argument("--erosion-iterations", type=int, default=Params.erosion_iterations)
-    gen.add_argument("--height-range", type=float, default=Params.height_range_m)
-    gen.add_argument("--out", type=Path, default=Path("out"))
-    args = parser.parse_args(argv)
+app = typer.Typer(no_args_is_help=True, add_completion=False)
+DEFAULT_OUT = Path("out")
+
+
+def generate_command(
+    seed: int = typer.Option(..., "--seed"),
+    size: int = typer.Option(Params.size),
+    octaves: int = typer.Option(Params.octaves),
+    erosion_iterations: int = typer.Option(Params.erosion_iterations),
+    island_exponent: float = typer.Option(Params.island_exponent),
+    island_warp: float = typer.Option(Params.island_warp),
+    erosion_strength: float = typer.Option(Params.erosion_strength),
+    erosion_talus: float = typer.Option(Params.erosion_talus),
+    height_range: float = typer.Option(Params.height_range_m),
+    out: Path = DEFAULT_OUT,
+) -> None:
+    """Generate a terrain heightmap."""
     try:
         params = Params(
-            seed=args.seed,
-            size=args.size,
-            octaves=args.octaves,
-            erosion_iterations=args.erosion_iterations,
-            height_range_m=args.height_range,
+            seed=seed,
+            size=size,
+            octaves=octaves,
+            erosion_iterations=erosion_iterations,
+            island_exponent=island_exponent,
+            island_warp=island_warp,
+            erosion_strength=erosion_strength,
+            erosion_talus=erosion_talus,
+            height_range_m=height_range,
         )
     except ValueError as error:
-        parser.error(str(error))  # exits with status 2 before any file is written
-    generate(params, args.out)
-    print(f"wrote {args.out}/ (seed {params.seed}, {params.size}x{params.size})")
+        raise click.BadParameter(str(error)) from error
+    generate(params, out)
+    print(f"wrote {out}/ (seed {params.seed}, {params.size}x{params.size})")
+
+
+app.command("generate")(generate_command)
+
+
+@app.command()
+def interactive() -> None:
+    """Configure and preview a world interactively."""
+    from pixel_world.interactive import run
+
+    run()
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    try:
+        result = app(
+            args=list(argv) if argv is not None else None,
+            prog_name="pixel_world",
+            standalone_mode=False,
+        )
+    except click.ClickException as error:
+        error.show()
+        raise SystemExit(error.exit_code) from error
+    return result if isinstance(result, int) else 0
     return 0
