@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 export OPENSPEC_TELEMETRY := 0
 
-.PHONY: help setup generate test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark
+.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark
 
 SIZE ?= 1024
 OUT ?= out
@@ -18,6 +18,9 @@ setup: ## Install dependencies into .venv
 generate: ## Generate a world (make generate SEED=42 [SIZE=1024] [OUT=out])
 	$(if $(SEED),,$(error SEED is required, e.g. make generate SEED=42))
 	uv run python -m pixel_world generate --seed $(SEED) --size $(SIZE) --out $(OUT) $(ARGS)
+
+interactive: ## Configure, generate and preview a world in the terminal
+	uv run python -m pixel_world interactive
 
 test: ## Run tests (scope: make test ARGS="tests/test_x.py -k name")
 	uv run pytest $(ARGS)

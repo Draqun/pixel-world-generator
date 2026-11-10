@@ -18,6 +18,7 @@ Same seed + same generator version = same world.
 ```sh
 make generate SEED=42 SIZE=256          # writes terrain, water and metadata layers
 make generate SEED=42 OUT=out/island42  # SIZE defaults to 1024
+make interactive                       # configure and preview with a terminal form
 make generate SEED=42 ARGS="--sea-level 0.3 --river-threshold 128"
 ```
 
@@ -27,6 +28,12 @@ same platform; `metadata.json` records the seed, generator version and every par
 `heightmap.png` is 16-bit grayscale, 1 px = 1 m; `heightmap.r16` holds the same values as a
 headerless little-endian uint16 raw file (row-major, top row first), the format Godot terrain addons
 import as R16/RAW; `preview.png` is the same image in 8 bits.
+
+`make interactive` opens a keyboard- and mouse-accessible form. Tab moves between fields;
+choose a size preset or enter a custom size, enter a seed, and review the explained settings.
+Select Generate to review the seed, size and output path before writing; existing generated files
+require explicit confirmation before replacement. The layer selector offers existing terrain and
+water images for terminal preview or opening in the system viewer. Generation runs in the background.
 
 ## Terrain
 

@@ -103,6 +103,7 @@ def test_different_seeds_differ(tmp_path: Path) -> None:
         ["--seed", "1", "--size", "8193"],
         ["--seed", "1", "--height-range", "0"],
         ["--seed", "1", "--height-range", "-1"],
+        ["--seed", "1", "--island-exponent", "nan"],
         ["--seed", "1", "--sea-level", "nan"],
         ["--seed", "1", "--sea-level", "1"],
         ["--seed", "1", "--min-lake-depth", "inf"],
@@ -187,3 +188,9 @@ def test_river_threshold_changes_only_water_and_metadata(tmp_path: Path) -> None
         assert a[name] == b[name]
     assert a["water.png"] != b["water.png"]
     assert a["metadata.json"] != b["metadata.json"]
+
+
+def test_terrain_parameters_are_available_as_flags(tmp_path: Path) -> None:
+    assert run(tmp_path, "--seed", "1", *FAST, "--island-warp", "0.5") == 0
+    meta = json.loads((tmp_path / "metadata.json").read_text())
+    assert meta["params"]["island_warp"] == 0.5
