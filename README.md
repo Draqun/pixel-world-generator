@@ -38,6 +38,45 @@ on seed 42. Stronger values (about 0.1) flatten basins into plateaus.
 Measured on one machine, seed 42, 50 iterations: 512 px about 2 s, 1024 px 9.6 s, 2048 px 48 s.
 Erosion dominates and grows with pixel count, so 4096 px is expected to take minutes.
 
+## Changelog and releases
+
+Every PR adds an English Markdown fragment in `changelog.d/`: `<issue>.added.md`,
+`<issue>.changed.md`, `<issue>.fixed.md` or `<issue>.removed.md`. Without an issue use a unique
+name such as `+release-automation.added.md`. Do not edit generated changelog entries by hand.
+
+```sh
+make changelog-draft                       # preview only
+make changelog-check TARGET_BRANCH=main    # compare against origin/main
+make release-check                        # validate local release prerequisites
+make build                                # wheel and sdist in dist/
+```
+
+Fetch the target branch before checking fragments. The `Checks and changelog` Actions job runs
+`make check` and checks fragments against the actual PR base, including stacked PRs. Configure
+it as a required check in branch protection if merges must be blocked on failure.
+
+To release, first merge the intended version in both `pyproject.toml` and
+`src/pixel_world/__init__.py` (format `X.Y.Z`). Algorithm changes require a generator version
+bump. In GitHub Actions, manually run **Release** on **main**. The workflow runs checks, consumes
+fragments into `CHANGELOG.md`, commits that change, atomically pushes main and tag `vX.Y.Z`, and
+creates a GitHub Release with wheel and sdist attachments. Existing tags are never overwritten.
+Nothing is published to PyPI. Local changelog assembly is `make changelog-build`.
+
+The workflow uses the built-in `GITHUB_TOKEN` with `contents: write`; repository rules must
+permit its release commit on main. No additional secret is needed. A concurrent update to main
+causes publication to fail without overwriting the newer commit.
+
+If the commit and tag were pushed but GitHub Release creation failed, keep the tag. Check out
+that tag in a clean checkout, rebuild with `make build`, copy its changelog section to a notes
+file, and finish the release (replace the example version):
+
+```sh
+gh release create v0.1.0 dist/* --verify-tag --title v0.1.0 --notes-file release-notes.md
+```
+
+If the release already exists but an upload failed, attach the missing files with
+`gh release upload v0.1.0 dist/*` instead. Do not rerun the full workflow or move the tag.
+
 ## License
 
 MIT, see `LICENSE`.
