@@ -16,12 +16,13 @@ Same seed + same generator version = same world.
 ## Usage
 
 ```sh
-make generate SEED=42 SIZE=256          # writes out/heightmap.png, preview.png, metadata.json
+make generate SEED=42 SIZE=256          # writes terrain, water and metadata layers
 make generate SEED=42 OUT=out/island42  # SIZE defaults to 1024
+make generate SEED=42 ARGS="--sea-level 0.3 --river-threshold 128"
 ```
 
 `--seed` is required. `--height-range` (default 400) is how many metres the full 16-bit range
-spans; it is only recorded in `metadata.json` and does not change any pixel. Same seed, generator version and parameters give byte-identical files on the
+spans; it affects water depths but not terrain pixels. Same seed, generator version and parameters give byte-identical files on the
 same platform; `metadata.json` records the seed, generator version and every parameter.
 `heightmap.png` is 16-bit grayscale, 1 px = 1 m; `heightmap.r16` holds the same values as a
 headerless little-endian uint16 raw file (row-major, top row first), the format Godot terrain addons
@@ -77,15 +78,17 @@ gh release create v0.1.0 dist/* --verify-tag --title v0.1.0 --notes-file release
 If the release already exists but an upload failed, attach the missing files with
 `gh release upload v0.1.0 dist/*` instead. Do not rerun the full workflow or move the tag.
 
-## License
-
-MIT, see `LICENSE`.
+## Water
 
 The water datum defaults to `sea_level=0.2`, a fraction of `height_range_m` in the
 range [0, 1). Metadata records `sea_level_m` in metres above the encoded height
 minimum; sea-relative elevation is height in metres minus this datum. The default
 `min_lake_depth_m=1.0` is a minimum retained depth in metres (non-negative).
-These parameters are recorded now; the water layer and CLI controls follow in a later slice.
+`water.png` is an aligned 8-bit grayscale category layer: 0 dry, 1 sea, 2 lake,
+3 river. Metadata records this legend and all controls. Set the datum and lake
+depth with `--sea-level` and `--min-lake-depth`; set the positive integer river
+threshold in square metres and maximum width in pixels with `--river-threshold`
+and `--max-river-width`. Pass these options through `ARGS` as shown above.
 
 River centrelines start at a contributing area of 256 m² by default. Each cell
 counts itself and all upstream cells exactly. The display widens channels in
@@ -103,3 +106,7 @@ NumPy 2.3.3, default parameters (peak RSS covers the complete process):
 | --- | ---: | ---: | ---: |
 | 1024 | 11.65 s | 6.13 s | 131.0 MiB |
 | 2048 | 52.81 s | 24.38 s | 398.7 MiB |
+
+## License
+
+MIT, see `LICENSE`.

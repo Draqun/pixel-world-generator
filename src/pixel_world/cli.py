@@ -1,37 +1,24 @@
 """Command line: `python -m pixel_world generate --seed N`."""
 
 import argparse
-import json
 from collections.abc import Sequence
 from pathlib import Path
 
-import numpy as np
-
-from pixel_world import __version__
 from pixel_world.params import Params
-from pixel_world.png import write_png8, write_png16
 from pixel_world.terrain import generate_terrain
-
-
-def _metadata(params: Params) -> str:
-    fields = params.to_dict()
-    meta = {
-        "generator_version": __version__,
-        "seed": fields.pop("seed"),
-        "params": fields,
-        "sea_level_m": params.sea_level * params.height_range_m,
-    }
-    return json.dumps(meta, sort_keys=True, indent=2) + "\n"
+from pixel_world.water import accumulation, drainage, rivers
+from pixel_world.writer import write_world
 
 
 def generate(params: Params, out: Path) -> None:
     height = generate_terrain(params)
-    preview = ((height.astype(np.uint32) + 128) // 257).astype(np.uint8)  # round(h / 257)
-    out.mkdir(parents=True, exist_ok=True)
-    write_png16(out / "heightmap.png", height)
-    (out / "heightmap.r16").write_bytes(height.astype("<u2").tobytes())
-    write_png8(out / "preview.png", preview)
-    (out / "metadata.json").write_text(_metadata(params), encoding="utf-8")
+    sea, lake, _, targets = drainage(
+        height, params.sea_level, params.height_range_m, params.min_lake_depth_m
+    )
+    _, water = rivers(
+        accumulation(targets), sea, lake, params.river_threshold, params.max_river_width
+    )
+    write_world(out, height, water, params)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -43,6 +30,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     gen.add_argument("--octaves", type=int, default=Params.octaves)
     gen.add_argument("--erosion-iterations", type=int, default=Params.erosion_iterations)
     gen.add_argument("--height-range", type=float, default=Params.height_range_m)
+    gen.add_argument("--sea-level", type=float, default=Params.sea_level)
+    gen.add_argument("--min-lake-depth", type=float, default=Params.min_lake_depth_m)
+    gen.add_argument("--river-threshold", type=int, default=Params.river_threshold)
+    gen.add_argument("--max-river-width", type=int, default=Params.max_river_width)
     gen.add_argument("--out", type=Path, default=Path("out"))
     args = parser.parse_args(argv)
     try:
@@ -52,6 +43,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             octaves=args.octaves,
             erosion_iterations=args.erosion_iterations,
             height_range_m=args.height_range,
+            sea_level=args.sea_level,
+            min_lake_depth_m=args.min_lake_depth,
+            river_threshold=args.river_threshold,
+            max_river_width=args.max_river_width,
         )
     except ValueError as error:
         parser.error(str(error))  # exits with status 2 before any file is written

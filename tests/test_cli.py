@@ -10,7 +10,7 @@ from pixel_world.params import Params
 from pixel_world.png import read_png
 
 FAST = ["--size", "64", "--octaves", "2", "--erosion-iterations", "2"]
-FILES = ("heightmap.png", "heightmap.r16", "preview.png", "metadata.json")
+FILES = ("heightmap.png", "heightmap.r16", "preview.png", "metadata.json", "water.png")
 
 
 def run(out: Path, *args: str) -> int:
@@ -18,7 +18,11 @@ def run(out: Path, *args: str) -> int:
 
 
 def digests(out: Path) -> dict[str, str]:
-    return {f: hashlib.sha256((out / f).read_bytes()).hexdigest() for f in FILES}
+    return {
+        f.name: hashlib.sha256(f.read_bytes()).hexdigest()
+        for f in sorted(out.iterdir())
+        if f.is_file()
+    }
 
 
 def test_writes_files_and_creates_directory(tmp_path: Path) -> None:
@@ -44,7 +48,7 @@ def test_default_size_is_1024() -> None:
 def test_metadata_records_run_including_defaults(tmp_path: Path) -> None:
     run(tmp_path, "--seed", "7", "--octaves", "3", "--size", "64", "--erosion-iterations", "1")
     meta = json.loads((tmp_path / "metadata.json").read_text())
-    assert meta["seed"] == 7 and meta["generator_version"] == "0.3.0"
+    assert meta["seed"] == 7 and meta["generator_version"] == "0.4.0"
     assert meta["sea_level_m"] == 80.0
     assert meta["params"]["sea_level"] == 0.2
     assert meta["params"]["min_lake_depth_m"] == 1.0
@@ -76,9 +80,10 @@ def test_height_range_recorded_and_pixels_unchanged(tmp_path: Path) -> None:
     assert a["metadata.json"] != b["metadata.json"]
 
 
-def test_same_seed_is_byte_identical(tmp_path: Path) -> None:
-    run(tmp_path / "a", "--seed", "5", *FAST)
-    run(tmp_path / "b", "--seed", "5", *FAST)
+@pytest.mark.parametrize("seed", ["5", "42"])
+def test_same_seed_is_byte_identical(tmp_path: Path, seed: str) -> None:
+    run(tmp_path / "a", "--seed", seed, *FAST)
+    run(tmp_path / "b", "--seed", seed, *FAST)
     assert digests(tmp_path / "a") == digests(tmp_path / "b")
 
 
@@ -98,6 +103,12 @@ def test_different_seeds_differ(tmp_path: Path) -> None:
         ["--seed", "1", "--size", "8193"],
         ["--seed", "1", "--height-range", "0"],
         ["--seed", "1", "--height-range", "-1"],
+        ["--seed", "1", "--sea-level", "nan"],
+        ["--seed", "1", "--sea-level", "1"],
+        ["--seed", "1", "--min-lake-depth", "inf"],
+        ["--seed", "1", "--min-lake-depth", "-1"],
+        ["--seed", "1", "--river-threshold", "0"],
+        ["--seed", "1", "--max-river-width", "0"],
     ],
 )
 def test_bad_input_exits_nonzero_and_writes_nothing(tmp_path: Path, args: list[str]) -> None:
@@ -112,10 +123,13 @@ def test_golden_hash_seed_42(tmp_path: Path) -> None:
     # Update only together with a generator_version bump (algorithm change).
     # Same-platform contract: zlib and numpy are not pinned across machines.
     run(tmp_path, "--seed", "42", "--size", "128")
-    assert (
-        digests(tmp_path)["heightmap.png"]
-        == "17009a7ac83b5ece48bd626dac9945138249abd045748e9b0edea554eb9fbc72"
-    )
+    assert digests(tmp_path) == {
+        "heightmap.png": "17009a7ac83b5ece48bd626dac9945138249abd045748e9b0edea554eb9fbc72",
+        "heightmap.r16": "98664b4d42cdaf1fe5c8f797f1d667ad14ac7c615f2cfe2ee3702a0f78ff245e",
+        "preview.png": "3f0dcae62515156d4f1ec45a4eb9e46912f5363315c785851efd6ee8df0fb6c0",
+        "water.png": "1d992843364176ede3da84ffc8751bf2277a933d423ef93ac02d20784f4c814d",
+        "metadata.json": "bf27c74f428928fab09e01804fd241209cd9e08e974a3b98d7792fbeffc040c3",
+    }
 
 
 def test_water_parameters_do_not_change_terrain_files(tmp_path: Path) -> None:
@@ -129,5 +143,47 @@ def test_water_parameters_do_not_change_terrain_files(tmp_path: Path) -> None:
         tmp_path / "b",
     )
     a, b = digests(tmp_path / "a"), digests(tmp_path / "b")
-    assert all(a[name] == b[name] for name in FILES if name != "metadata.json")
+    assert all(
+        a[name] == b[name]
+        for name in FILES
+        if name in ("heightmap.png", "heightmap.r16", "preview.png")
+    )
+    assert a["metadata.json"] != b["metadata.json"]
+    assert a["water.png"] != b["water.png"]
+
+
+def test_water_layer_and_controls(tmp_path: Path) -> None:
+    run(
+        tmp_path,
+        "--seed",
+        "42",
+        *FAST,
+        "--sea-level",
+        "0.4",
+        "--min-lake-depth",
+        "2",
+        "--river-threshold",
+        "8",
+        "--max-river-width",
+        "3",
+    )
+    water, depth, colour = read_png(tmp_path / "water.png")
+    meta = json.loads((tmp_path / "metadata.json").read_text())
+    assert water.shape == (64, 64) and (depth, colour) == (8, 0)
+    assert set(np.unique(water)) <= {0, 1, 2, 3} and (water == 1).any()
+    assert meta["layers"]["water.png"] == {"0": "dry", "1": "sea", "2": "lake", "3": "river"}
+    assert meta["sea_level_m"] == 160
+    assert [
+        meta["params"][k]
+        for k in ("sea_level", "min_lake_depth_m", "river_threshold", "max_river_width")
+    ] == [0.4, 2, 8, 3]
+
+
+def test_river_threshold_changes_only_water_and_metadata(tmp_path: Path) -> None:
+    run(tmp_path / "a", "--seed", "42", *FAST, "--river-threshold", "1")
+    run(tmp_path / "b", "--seed", "42", *FAST, "--river-threshold", "100000")
+    a, b = digests(tmp_path / "a"), digests(tmp_path / "b")
+    for name in ("heightmap.png", "heightmap.r16", "preview.png"):
+        assert a[name] == b[name]
+    assert a["water.png"] != b["water.png"]
     assert a["metadata.json"] != b["metadata.json"]

@@ -17,7 +17,7 @@ setup: ## Install dependencies into .venv
 
 generate: ## Generate a world (make generate SEED=42 [SIZE=1024] [OUT=out])
 	$(if $(SEED),,$(error SEED is required, e.g. make generate SEED=42))
-	uv run python -m pixel_world generate --seed $(SEED) --size $(SIZE) --out $(OUT)
+	uv run python -m pixel_world generate --seed $(SEED) --size $(SIZE) --out $(OUT) $(ARGS)
 
 test: ## Run tests (scope: make test ARGS="tests/test_x.py -k name")
 	uv run pytest $(ARGS)
