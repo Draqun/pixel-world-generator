@@ -6,15 +6,15 @@ and ship no downstream layer that claims unsupported planet-scale correctness.
 
 ## 1. Persistent world projects and coordinates
 
-- [ ] 1.1 Implement project creation/load and separate immutable generation definitions from
+- [x] 1.1 Implement project creation/load and separate immutable generation definitions from
   canonical coverage records; document overview-first and region-first workflows and verify
   independent projects, save/reopen, missing caches, incompatible overrides and unsupported
   versions without changing existing data. Geography/layout ownership is consolidated here.
-- [ ] 1.2 Add a validated versioned world definition and manifest for a sphere and flat bounded or
+- [x] 1.2 Add a validated versioned world definition and manifest for a sphere and flat bounded or
   east-west wrapping world, including metre dimensions, seeds, parameters, datum and provenance;
   document fixed project dimensions versus generated coverage; test invalid input before writes
   and repeat-run byte identity without requiring an overview.
-- [ ] 1.3 Implement world-coordinate conversions and canonical seam ownership, including sphere
+- [x] 1.3 Implement world-coordinate conversions and canonical seam ownership, including sphere
   poles and face boundaries; test round trips, wrapping, distances and documented distortion limits.
 
 ## 2. Geographic choices and overview

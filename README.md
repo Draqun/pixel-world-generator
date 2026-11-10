@@ -121,3 +121,94 @@ NumPy 2.3.3, default parameters (peak RSS covers the complete process):
 ## License
 
 MIT, see `LICENSE`.
+
+## World project foundation
+
+The first world-project slice provides a Python API, persisted definitions and coordinate
+conversions. Overview generation, regional terrain exports and their CLI remain planned. The
+existing `make generate` and `make interactive` workflows still generate standalone islands.
+
+A project contains:
+
+- `world.json`: the immutable definition and its SHA-256 `world_id`. It records the seed,
+  generator/schema/coordinate versions, geometry, metre dimensions or radius, explicit geography,
+  vertical minimum/range, absolute sea datum, overview resolution and numeric generation parameters.
+  Parameters are persisted configuration; this slice does not interpret them as a terrain algorithm.
+- `coverage.json`: separately versioned, canonically ordered completed areas and relative artifact
+  paths with SHA-256 hashes. Adding coverage checks completed artifact hashes, preserves existing
+  records and atomically replaces only this index. An area's own metadata will locate its bounds
+  and projection when regional export is implemented.
+
+Developer API (no raster is required to create or reopen a project):
+
+```python
+from pathlib import Path
+from pixel_world.world import WorldDefinition
+from pixel_world.writer import create_project, load_project
+
+world = WorldDefinition(
+    seed=42,
+    geometry="flat",
+    geography="region",
+    width_m=16_000_000,
+    height_m=16_000_000,
+    boundary="wrap_x",
+)
+project = create_project(Path("out/story-world"), world)
+project = load_project(Path("out/story-world"), expected=world)
+position = project.definition.flat_position(-1, 200)  # (15_999_999, 200) metres
+```
+
+For a sphere use `geometry="sphere"`, `radius_m=6_000_000`, and leave planar dimensions absent.
+The `bounded` boundary field is unused for spheres; spheres have no physical boundary. Flat
+worlds accept `bounded` or east-west periodic `wrap_x`; y never wraps. Flat positions are in
+half-open `[0, width_m)` and `[0, height_m)` intervals, with origin at top left, x right and y down.
+Geography must be explicit (`world`, `region`, `island`, `peninsula` or `continent`); it is recorded
+intent until section 2 implements its shaping rules. Project directories must be new. Loading
+with incompatible expected settings, unknown versions, incomplete definitions or invalid coverage
+fails without writing. Project writes currently require one process per project.
+
+Physical world dimensions, coordinate origin, seed, versions, vertical encoding and geography
+are fixed at project creation. Generating further coverage will materialize more of that world,
+not stretch its existing terrain or move the origin. Starting with an overview or only a region
+will use this same saved definition. A later overview must use the original field and sampling
+rules. Caches and in-memory state are disposable. Copies with identical definitions share their
+content identity but can be continued independently. Reproduction is guaranteed on the same
+platform and supported generator version; unsupported versions require their recorded generator.
+
+### Coordinate convention, version 1
+
+Sphere coordinates use degrees of longitude east and latitude north, with longitude normalized
+to `[-180, 180)` and pole longitude canonicalized to zero. Cartesian x points to longitude 0,
+y to longitude 90 east, and z north. `pixel_world.coordinates` converts these positions to a
+normalized cube-sphere atlas. A face has `u,v` in `[-1,1]`, mapped to the normalized vector
+`normal + u * right + v * down`:
+
+| Face | Normal | Right | Down |
+| --- | --- | --- | --- |
+| +x | (1,0,0) | (0,1,0) | (0,0,-1) |
+| -x | (-1,0,0) | (0,-1,0) | (0,0,-1) |
+| +y | (0,1,0) | (-1,0,0) | (0,0,-1) |
+| -y | (0,-1,0) | (1,0,0) | (0,0,-1) |
+| +z | (0,0,1) | (0,1,0) | (1,0,0) |
+| -z | (0,0,-1) | (0,1,0) | (-1,0,0) |
+
+The largest absolute Cartesian component selects the face; ties belong to x before y before z
+(with absolute tolerance `1e-15` on unit vectors for roundoff). `canonical_cube` gives edges and
+corners one owner. Cube face coordinates are dimensionless, not a globally uniform metre grid.
+`surface_distance` measures great-circle distances using the recorded sphere radius.
+
+`local_to_lonlat` and `lonlat_to_local` define an azimuthal equidistant local projection with a
+fixed world anchor, x east/right, y south/down. Adjacent tiles must share the same anchor and
+orientation. At poles the canonical zero-longitude meridian fixes orientation. Radial distances
+are exact; at radius `d`, maximum tangential scale excess is `(d/R)/sin(d/R) - 1`. Conversions
+reject points exceeding 1% scale excess. An export must check the most distant grid corner and
+record the anchor and maximum error; this slice provides conversions, not an export raster.
+Global overviews will have a separately recorded projection and resolution.
+
+Run the foundation checks with:
+
+```sh
+make test ARGS="tests/test_world.py tests/test_coordinates.py"
+make check
+```
