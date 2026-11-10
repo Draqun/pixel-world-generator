@@ -72,7 +72,9 @@ def load_project(out: Path, expected: WorldDefinition | None = None) -> WorldPro
         if not isinstance(manifest["definition"], dict) or set(manifest["definition"]) != {
             field.name for field in fields(WorldDefinition)
         }:
-            raise ValueError("incomplete or unknown world definition fields")
+            raise ValueError(
+                "incomplete or unknown world definition fields; use the recorded generator"
+            )
         definition = WorldDefinition(**manifest["definition"])
         if manifest["world_id"] != definition.world_id:
             raise ValueError("world identity does not match definition")
@@ -127,3 +129,34 @@ def write_coverage(out: Path, project: WorldProject) -> None:
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+def write_overview(out: Path, definition: WorldDefinition, pixels: NDArray[np.uint16]) -> None:
+    """Publish an overview once and index its completed artifacts, preserving old project data."""
+    from pixel_world.overview import overview_metadata
+    from pixel_world.png import encode_png
+
+    project = load_project(out, expected=definition)
+    metadata = canonical_json(overview_metadata(definition, pixels))
+    image = encode_png(pixels)
+    if any(record.area_id == "overview" for record in project.coverage):
+        raise FileExistsError("overview already registered")
+    directory = out / "overview"
+    directory.mkdir()
+    files = {"heightmap.png": image, "metadata.json": metadata}
+    try:
+        for name, data in files.items():
+            (directory / name).write_bytes(data)
+        record = CoverageRecord(
+            "overview",
+            tuple(
+                (f"overview/{name}", hashlib.sha256(data).hexdigest())
+                for name, data in files.items()
+            ),
+        )
+        write_coverage(out, WorldProject(definition, (*project.coverage, record)))
+    except (OSError, ValueError):
+        for name in files:
+            (directory / name).unlink(missing_ok=True)
+        directory.rmdir()
+        raise

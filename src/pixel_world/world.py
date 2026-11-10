@@ -30,6 +30,7 @@ class WorldDefinition:
     seed: int
     geometry: str
     geography: str
+    extent: str = "world"
     width_m: float | None = None
     height_m: float | None = None
     radius_m: float | None = None
@@ -39,18 +40,20 @@ class WorldDefinition:
     sea_level_m: float = 80.0
     overview_resolution: int = 512
     parameters: tuple[tuple[str, int | float], ...] = ()
-    schema_version: int = 1
+    schema_version: int = 2
     coordinate_version: int = 1
     generator_version: str = __version__
 
     def __post_init__(self) -> None:
-        for name in ("schema_version", "coordinate_version"):
-            if type(getattr(self, name)) is not int or getattr(self, name) != 1:
+        for name, version in (("schema_version", 2), ("coordinate_version", 1)):
+            if type(getattr(self, name)) is not int or getattr(self, name) != version:
                 raise ValueError(f"unsupported {name}; use a compatible generator")
         if self.generator_version != __version__:
             raise ValueError("unsupported generator_version; use the project's recorded generator")
         if type(self.seed) is not int or self.seed < 0:
             raise ValueError("seed must be a non-negative integer")
+        if self.extent not in ("world", "region"):
+            raise ValueError("extent must be world or region")
         if self.geometry not in ("flat", "sphere"):
             raise ValueError("geometry must be flat or sphere")
         if self.geography not in ("region", "island", "peninsula", "continent", "world"):
