@@ -4,14 +4,18 @@ Seeded world map generator. 1 px = 1 m. Python.
 
 Same seed + same generator version = same world.
 
-## Planned slices
+## Direction and current status
 
-1. Skeleton, `--seed`, terrain (16-bit heightmap, island mask, erosion), PNG preview
-2. Water: lakes, rivers, sea
-3. Biomes and masks
-4. Settlements (towns, villages, fortresses) as JSON
-5. Roads and bridges
-6. Borders
+Terrain, water and the interactive terminal interface are implemented. The next planned terrain
+milestone is persistent world projects: start with a whole-world overview or only a needed region,
+save the project, then generate more areas of the same world without changing existing terrain.
+An island is a geography choice; the existing standalone command keeps its island default.
+These project/world operations are planned, not available commands yet.
+
+See [the roadmap](openspec/roadmap.md) and
+[world project proposal](openspec/changes/planetary-world-regions/proposal.md).
+World-linked water requires a separate continuity design before the remaining stages: biomes,
+settlements, roads and bridges, then borders. Existing downstream proposals target single maps.
 
 ## Usage
 
