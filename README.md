@@ -86,3 +86,20 @@ range [0, 1). Metadata records `sea_level_m` in metres above the encoded height
 minimum; sea-relative elevation is height in metres minus this datum. The default
 `min_lake_depth_m=1.0` is a minimum retained depth in metres (non-negative).
 These parameters are recorded now; the water layer and CLI controls follow in a later slice.
+
+River centrelines start at a contributing area of 256 m² by default. Each cell
+counts itself and all upstream cells exactly. The display widens channels in
+steps based on the base-2 logarithm of area divided by the threshold, capped by
+`max_river_width` (default 9 pixels). This is a map symbol, not an excavated bed
+or a hydraulic simulation. Sea and lakes take precedence over the symbol.
+
+Run `make water-benchmark` to measure seed 42 at 1024 and 2048 and write
+`out/water-preview-1024.png` and `out/water-preview-2048.png`. These diagnostic
+images show sea in dark grey, lakes in light grey and rivers in white over the
+terrain. Reference run on Linux x86-64, Intel i7-13800H, Python 3.13.8 and
+NumPy 2.3.3, default parameters (peak RSS covers the complete process):
+
+| Size | Terrain | Water | Peak RSS |
+| --- | ---: | ---: | ---: |
+| 1024 | 11.65 s | 6.13 s | 131.0 MiB |
+| 2048 | 52.81 s | 24.38 s | 398.7 MiB |

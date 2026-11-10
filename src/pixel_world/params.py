@@ -20,9 +20,18 @@ class Params:
     height_range_m: float = 400.0
     sea_level: float = 0.2
     min_lake_depth_m: float = 1.0
+    river_threshold: int = 256
+    max_river_width: int = 9
 
     def __post_init__(self) -> None:
-        for name in ("seed", "size", "octaves", "erosion_iterations"):
+        for name in (
+            "seed",
+            "size",
+            "octaves",
+            "erosion_iterations",
+            "river_threshold",
+            "max_river_width",
+        ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
                 raise ValueError(f"{name} must be an integer, got {value!r}")
@@ -54,6 +63,8 @@ class Params:
             raise ValueError(f"erosion_talus must be > 0, got {self.erosion_talus}")
         if self.island_warp < 0:
             raise ValueError(f"island_warp must be >= 0, got {self.island_warp}")
+        if self.river_threshold < 1 or self.max_river_width < 1:
+            raise ValueError("river_threshold and max_river_width must be >= 1")
         if self.seed < 0:
             raise ValueError(f"seed must be >= 0, got {self.seed}")
         if not SIZE_MIN <= self.size <= SIZE_MAX:

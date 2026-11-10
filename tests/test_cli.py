@@ -44,7 +44,7 @@ def test_default_size_is_1024() -> None:
 def test_metadata_records_run_including_defaults(tmp_path: Path) -> None:
     run(tmp_path, "--seed", "7", "--octaves", "3", "--size", "64", "--erosion-iterations", "1")
     meta = json.loads((tmp_path / "metadata.json").read_text())
-    assert meta["seed"] == 7 and meta["generator_version"] == "0.2.0"
+    assert meta["seed"] == 7 and meta["generator_version"] == "0.3.0"
     assert meta["sea_level_m"] == 80.0
     assert meta["params"]["sea_level"] == 0.2
     assert meta["params"]["min_lake_depth_m"] == 1.0
