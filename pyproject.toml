@@ -8,7 +8,11 @@ license-files = ["LICENSE"]
 dependencies = ["numpy==2.3.3"]
 
 [dependency-groups]
-dev = ["pytest", "ruff"]
+dev = [
+    "pytest",
+    "ruff",
+    "towncrier==26.9.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -26,3 +30,32 @@ select = ["E", "F", "I", "B", "UP", "NPY"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.towncrier]
+name = "pixel-world-generator"
+directory = "changelog.d"
+filename = "CHANGELOG.md"
+start_string = "<!-- towncrier release notes start -->\n"
+title_format = "## [{version}] - {project_date}"
+issue_format = "[#{issue}](https://github.com/Draqun/pixel-world-generator/issues/{issue})"
+underlines = ["", "", ""]
+
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
+showcontent = true
