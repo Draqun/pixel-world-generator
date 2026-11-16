@@ -41,7 +41,7 @@ extent limit. No unlimited-world or real-time streaming guarantee is implied.
 | terrain-generation | Implemented and archived | Preserve legacy output compatibility |
 | water-generation | All tasks complete and merged | Owner confirmation, sync surface-water, archive |
 | interactive-typer-cli | All tasks complete and merged | Owner confirmation, sync interactive-world-cli, archive |
-| [planetary-world-regions](changes/planetary-world-regions/proposal.md) | Sections 1–4 implemented: projects, overview, regional terrain and CLI workflows | Owner workflow confirmation, spec synchronization and archive; design global water next |
+| [planetary-world-regions](changes/planetary-world-regions/proposal.md) | Sections 1–4 implemented: projects, overview, regional terrain and CLI workflows | Owner confirmed workflow review; spec synchronization and archive; design global water next |
 | biome-generation | Planned for existing single-map water | Defer world-linked implementation until global water has a contract |
 | settlement-generation | Planned, depends on biomes | Defer until biomes are merged for the target workflow |
 | roads-and-bridges | Planned, depends on settlements | Defer until settlements are merged for the target workflow |
