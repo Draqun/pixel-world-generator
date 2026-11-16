@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 export OPENSPEC_TELEMETRY := 0
 
-.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark overview-reference regional-reference
+.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark overview-reference regional-reference world-create world-info world-overview world-select region-export
 
 SIZE ?= 1024
 OUT ?= out
@@ -64,3 +64,23 @@ overview-reference: ## Generate new seed-42 overview reference projects (choose 
 
 regional-reference: ## Export six regional fixtures, check seams and measure resources (fresh OUT)
 	uv run python scripts/regional_reference.py $(OUT)/regional-reference
+
+world-create: ## Create a project (PROJECT=path ARGS="--seed 42 --geometry flat ...")
+	$(if $(PROJECT),,$(error PROJECT is required))
+	uv run python -m pixel_world world-create --project "$(PROJECT)" $(ARGS)
+
+world-info: ## Resume and inspect project settings and coverage (PROJECT=path)
+	$(if $(PROJECT),,$(error PROJECT is required))
+	uv run python -m pixel_world world-info --project "$(PROJECT)" $(ARGS)
+
+world-overview: ## Export a project's optional overview (PROJECT=path)
+	$(if $(PROJECT),,$(error PROJECT is required))
+	uv run python -m pixel_world world-overview --project "$(PROJECT)" $(ARGS)
+
+world-select: ## Select an overview position (PROJECT=path ARGS="--overview-x 10.5 --overview-y 20.5")
+	$(if $(PROJECT),,$(error PROJECT is required))
+	uv run python -m pixel_world world-select --project "$(PROJECT)" $(ARGS)
+
+region-export: ## Export a saved world's region (PROJECT=path ARGS="--x 0 --y 0 --width 512 --height 512")
+	$(if $(PROJECT),,$(error PROJECT is required))
+	uv run python -m pixel_world region-export --project "$(PROJECT)" $(ARGS)

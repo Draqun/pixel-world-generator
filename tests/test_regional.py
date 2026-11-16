@@ -261,7 +261,8 @@ def test_spherical_pixel_distance_and_distortion_include_context():
         generate_region(world, Region(230, 0, 1, 1, anchor_lon=0, anchor_lat=0))
 
 
-def test_allocation_bound_is_independent_of_physical_world_size(monkeypatch):
+@pytest.mark.parametrize("iterations", [0, 2])
+def test_allocation_bound_is_independent_of_physical_world_size(monkeypatch, iterations):
     import pixel_world.regional as regional
 
     original = regional.geography_field
@@ -272,11 +273,15 @@ def test_allocation_bound_is_independent_of_physical_world_size(monkeypatch):
         return original(world, first, second, rng)
 
     monkeypatch.setattr(regional, "geography_field", measured)
+    calls = []
+    halo = 15 * iterations + 1 if iterations else 0
     for size in (16000, 16000000):
         shapes.clear()
-        generate_region(flat(width_m=size, height_m=size), Region(100, 100, 128, 96))
-        assert max(np.prod(shape) for shape in shapes) <= 64 * 128
-        assert sum(np.prod(shape) for shape in shapes) == 96 * 128
+        world = flat(width_m=size, height_m=size, parameters=(("erosion_iterations", iterations),))
+        generate_region(world, Region(100, 100, 128, 96))
+        assert max(np.prod(shape) for shape in shapes) <= 64 * (128 + 2 * halo)
+        calls.append(shapes.copy())
+    assert calls[0] == calls[1]
 
 
 def test_export_refuses_regions_symlink_outside_project(tmp_path, monkeypatch):

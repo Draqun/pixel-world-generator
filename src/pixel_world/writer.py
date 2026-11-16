@@ -164,12 +164,14 @@ def write_overview(out: Path, definition: WorldDefinition, pixels: NDArray[np.ui
         raise
 
 
-def write_region(out: Path, definition: WorldDefinition, region: Region) -> Path:
+def write_region(
+    out: Path, definition: WorldDefinition, region: Region, *, water: str = "none"
+) -> Path:
     """Publish complete terrain artifacts once, then register their hashes atomically."""
     from pixel_world.png import encode_png
 
     project = load_project(out, expected=definition)
-    metadata = canonical_json(region_metadata(definition, region))
+    metadata = canonical_json(region_metadata(definition, region, water=water))
     area_id = "region-" + hashlib.sha256(metadata).hexdigest()
     directory = out / "regions" / area_id
     if not directory.resolve().is_relative_to(out.resolve()):

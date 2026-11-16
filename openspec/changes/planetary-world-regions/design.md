@@ -188,6 +188,34 @@ anchors after erosion by gating its displacement relative to the original anchor
 Review focus: nonfinite/boolean controls, wrapped edges and sphere poles, requests near physical
 bounds, projection distortion including halos, and write/index failures must all have tests.
 
+## Section 4 integration plan
+
+Use the existing Typer CLI and pure world/overview/regional APIs; add no dependencies or new
+interactive UI. Expose `world-create`, `world-info`, `world-overview`, `world-select` and
+`region-export` through equivalent Make targets using `PROJECT` and `ARGS`. Creation records all
+regional controls once; continuation loads them from disk and never accepts incompatible overrides.
+`world-select` accepts continuous overview pixel coordinates and returns JSON containing the
+requested world position, local scale, snapped integer-metre region and projection anchor.
+Flat selection centres the region on the selected point, rounding the origin down to the metre.
+Spherical selection either creates a projection anchored at the point or uses an explicitly
+provided anchor for an existing grid. Region export also accepts direct grid coordinates, so
+an overview image is optional. Validate the selected grid, context and distortion before export.
+
+Implement in `world_cli.py` and register commands in `cli.py`; add Make targets and CLI tests
+before implementation. Extend metadata in `overview.py`/`regional.py` with explicit omitted water
+coverage, resolution and exact-drainage availability. Add a keyword-only `water="none"` to
+`write_region`/`region_metadata`; reject every other request before generating/writing files.
+No approximate water product is offered. Test both Python and CLI rejection and unchanged files.
+
+Verify both Make workflows on both geometries, including fresh-process resume, no caches,
+overview-first versus region-first, A/B request order, all-artifact repeat hashes, two seeds,
+preserved anchors, seams and scale. Keep section 3's bounded-resource tests and extend reference
+measurements through the user commands. Bump to 0.7.0 for the changed output metadata contract;
+preserve terrain/water pixel goldens and update metadata goldens deliberately. Document commands,
+failure behavior, measured resource budgets and compatibility, add a changelog fragment, run
+`make check`, review and open one PR. Archive only after explicit owner confirmation of the final
+workflow; no global-water or downstream implementation belongs to this slice.
+
 ## Risks / Trade-offs
 
 - [Spherical grids cannot preserve all metre distances globally] → record projection and measured

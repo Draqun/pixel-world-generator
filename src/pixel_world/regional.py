@@ -261,8 +261,13 @@ def generate_region(world: WorldDefinition, region: Region) -> NDArray[np.uint16
     return np.rint(np.clip(height, 0, 1) * 65535).astype(np.uint16)
 
 
-def region_metadata(world: WorldDefinition, region: Region) -> dict:
+def region_metadata(world: WorldDefinition, region: Region, *, water: str = "none") -> dict:
     """Describe a fixed projection, world provenance, vertical encoding and omitted layers."""
+    if water != "none":
+        raise ValueError(
+            "world-linked water is unavailable, including exact global drainage; use water='none'; "
+            "regional edges cannot be treated as ocean outlets"
+        )
     halo, error = region_context(world, region)
     rows, cols = overview_shape(world)
     corners = [
@@ -322,4 +327,10 @@ def region_metadata(world: WorldDefinition, region: Region) -> dict:
             "anchor_displacement_gated": True,
         },
         "omitted_layers": ["water", "biomes", "settlements", "roads", "borders"],
+        "water": {
+            "status": "omitted",
+            "coverage": None,
+            "resolution_m": None,
+            "exact_global_drainage": False,
+        },
     }
