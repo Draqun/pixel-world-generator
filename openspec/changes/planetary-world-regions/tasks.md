@@ -30,16 +30,16 @@ and ship no downstream layer that claims unsupported planet-scale correctness.
 
 ## 3. Shared terrain and regional export
 
-- [ ] 3.1 Add coordinate-keyed hierarchical terrain samples and shared vertical encoding,
+- [x] 3.1 Add coordinate-keyed hierarchical terrain samples and shared vertical encoding,
   preserving overview anchor values; test seed/version isolation, overlap equality and adjacent
   flat-wrap and sphere-face seams without per-region normalization; verify identical samples
   with no overview image and with an overview generated before or after regional exports.
-- [ ] 3.2 Export selected one-metre regional grids as aligned PNG/R16 and metadata, including a
+- [x] 3.2 Export selected one-metre regional grids as aligned PNG/R16 and metadata, including a
   world-anchored projection, measured distortion and explicit omitted layers; verify assembled
   tiles against a single area, repeat hashes, invalid-bound failures and unchanged legacy output.
   Persist coverage only after complete export; verify interrupted writes preserve old artifacts
   and reopening a project to add neighbours leaves all prior regional file hashes unchanged.
-- [ ] 3.3 First prove the erosion dependency bound, including catchment accumulation; document
+- [x] 3.3 First prove the erosion dependency bound, including catchment accumulation; document
   the supported world-space method and settings. Implement sufficient context or reject requests that
   exceed the documented resource budget; test seam-free eroded overlap, preflight errors and
   allocation scaling independent of planet dimensions at fixed overview and region sizes.

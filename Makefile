@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 export OPENSPEC_TELEMETRY := 0
 
-.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark overview-reference
+.PHONY: help setup generate interactive test lint fmt openspec status check changelog-check changelog-draft changelog-build release-check build water-benchmark overview-reference regional-reference
 
 SIZE ?= 1024
 OUT ?= out
@@ -61,3 +61,6 @@ water-benchmark: ## Benchmark seed 42 water at 1024 and 2048; save diagnostic pr
 
 overview-reference: ## Generate new seed-42 overview reference projects (choose a fresh OUT)
 	uv run python scripts/overview_reference.py $(OUT)/overview-reference
+
+regional-reference: ## Export six regional fixtures, check seams and measure resources (fresh OUT)
+	uv run python scripts/regional_reference.py $(OUT)/regional-reference
