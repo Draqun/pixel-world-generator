@@ -210,5 +210,11 @@ def overview_metadata(world: WorldDefinition, pixels: NDArray[np.uint16]) -> dic
             "erosion": False,
         },
         "omitted_layers": ["water", "biomes", "settlements", "roads", "borders"],
+        "water": {
+            "status": "omitted",
+            "coverage": None,
+            "resolution_m": None,
+            "exact_global_drainage": False,
+        },
         "reference_samples": references,
     }

@@ -6,12 +6,13 @@ Same seed + same generator version = same world.
 
 ## Direction and current status
 
-Terrain, water and the interactive terminal interface are implemented. The Python API supports
+Terrain, water and the interactive terminal interface are implemented. The CLI and Python API support
 persistent world projects, coarse overviews and aligned regional terrain exports: start with a
 whole-world overview or only a needed region, save the project, then generate more areas of the
 same world without changing existing terrain.
 An island is a geography choice; the existing standalone command keeps its island default.
-Interactive world selection and dedicated world/region commands are the next planned slice.
+World commands support overview selection by pixel coordinates and direct regional exports.
+The interactive terminal form continues to generate standalone maps.
 
 See [the roadmap](openspec/roadmap.md) and
 [world project proposal](openspec/changes/planetary-world-regions/proposal.md).
@@ -285,9 +286,10 @@ only their recorded generator version changes.
 
 ### Shared terrain and regional export
 
-Generator 0.6.0 adds regional exports through the Python API; use a new project because saved
-0.5.0 projects require their recorded generator. It keeps the coarse geography samples and all
-legacy standalone terrain/water pixel bytes unchanged. CLI selection is still planned.
+Generator 0.7.0 exposes the regional API through world commands and explicitly records omitted
+water coverage and resolution. Use a new project: saved 0.5.0/0.6.0 projects require their recorded
+generator. Coarse geography samples, regional terrain algorithms and legacy standalone
+terrain/water pixel bytes remain unchanged; recorded version and water metadata change deliberately.
 
 ```python
 from pathlib import Path
@@ -389,10 +391,94 @@ make regional-reference OUT=out/regional-demo  # fresh destination; six checked 
 make test ARGS="tests/test_regional.py tests/test_erosion.py"
 ```
 
-The reference target checks assembled tiles against full exports, PNG/R16 agreement and
-region-first generation followed by an overview. It writes `measurements.json` with elapsed
-export times, artifact sizes and cumulative process peak RSS (Linux). A reference run used
-about 82 MiB peak RSS: 1024² without erosion took 0.44–0.75 s, and 512² with four erosion
-iterations took 0.41–0.62 s across 16-km and 16-million-metre flat worlds and a sphere at a cube
+The reference target uses fresh CLI processes for project creation, selection, export, overview
+and resume, and checks assembled tiles against full exports and PNG/R16 agreement. It writes
+`measurements.json` with elapsed export times including process startup, artifact sizes and
+cumulative child-process peak RSS (Linux). A reference run used about 82 MiB peak RSS: 1024²
+without erosion took 0.83–1.39 s, and 512² with four erosion iterations took 0.69–1.04 s across
+16-km and 16-million-metre flat worlds and a sphere at a cube
 face seam. These are measurements, not hardware-independent limits. Tests instrument sampling
 batch sizes to verify allocation is independent of total physical world area.
+
+### World commands and location selection
+
+Each command reads the saved definition; continuation does not accept seed, geography, dimensions
+or erosion overrides. `world-create` creates a new directory with only `world.json` and
+`coverage.json`. `world-info` reopens a project and prints its immutable definition and completed
+coverage. `world-overview` adds the optional overview once. `world-select` returns a validated
+region centred near the chosen overview position. `region-export` writes that grid or a directly
+specified grid. All commands print JSON; use `make -s` to hide Make's echoed command when parsing it.
+`PROJECT` is required, and paths containing spaces are supported.
+
+Overview-first, bounded flat world (16,000,000 metres on each side):
+
+```sh
+make world-create PROJECT=out/flat-world \
+  ARGS="--seed 42 --geometry flat --geography continent --width-m 16000000 --height-m 16000000 --overview-resolution 64 --erosion-iterations 4"
+make world-overview PROJECT=out/flat-world
+# View overview/heightmap.png; pixel centres use half-integers.
+make world-select PROJECT=out/flat-world \
+  ARGS="--overview-x 32.5 --overview-y 32.5 --width 512 --height 512"
+# This selection is (8125000, 8125000) metres. Its JSON grid gives these integer edges:
+make region-export PROJECT=out/flat-world \
+  ARGS="--x 8124744 --y 8124744 --width 512 --height 512"
+make world-info PROJECT=out/flat-world
+# Later, reopen and add the eastern neighbour with the same saved generation settings.
+make region-export PROJECT=out/flat-world \
+  ARGS="--x 8125256 --y 8124744 --width 512 --height 512"
+```
+
+Region-first, spherical world, using direct metre offsets without an overview:
+
+```sh
+make world-create PROJECT=out/sphere-world \
+  ARGS="--seed 42 --geometry sphere --geography region --extent region --radius-m 6000000 --overview-resolution 32 --erosion-iterations 2"
+make region-export PROJECT=out/sphere-world \
+  ARGS="--x -256 --y -256 --width 512 --height 512 --anchor-lon 45 --anchor-lat 0"
+make world-info PROJECT=out/sphere-world
+make region-export PROJECT=out/sphere-world \
+  ARGS="--x 256 --y -256 --width 512 --height 512 --anchor-lon 45 --anchor-lat 0"
+# Generate the optional overview later; it does not change either region.
+make world-overview PROJECT=out/sphere-world
+# With 64 columns and 32 rows, this maps back to longitude 45, latitude 0.
+make world-select PROJECT=out/sphere-world \
+  ARGS="--overview-x 40 --overview-y 16 --width 512 --height 512"
+```
+
+For a flat region-first workflow, use `region-export --x/--y` as world metre edges without an
+anchor, then optionally generate an overview. For a spherical overview-first workflow, generate
+the overview, select a position, then use the returned grid including `anchor_lon`/`anchor_lat`.
+No overview image is needed to evaluate the saved sampling lattice, so `world-select` also works
+before writing one. To select another location on an existing spherical grid, pass its same
+`--anchor-lon` and `--anchor-lat` to `world-select`; otherwise the selected location becomes a new
+projection anchor. Do not recenter individual partitions of an existing area.
+
+`world-select` prints `position` (metres for flat worlds, longitude/latitude degrees for spheres),
+`pixel_span_m` (physical overview pixel spans at that position), `grid`, `max_scale_error` and
+`world_id`. It rounds the region origin down to integer metres, so the output centre can differ
+from the selected point by less than a metre along each grid axis. The reported position remains
+the exact overview selection. Exports use the grid's half-integer cell centres and shared datum.
+Selections that cannot fit the requested grid/context within world or distortion limits fail;
+they are not silently moved or resized. Only flat x may wrap, using `--boundary wrap_x` at creation.
+
+`world-create` accepts the geometry, geography, extent, dimensions/radius, boundary, overview
+resolution and vertical datum fields described above, plus the four regional controls. Heights
+are in metres and `--sea-level-m` is an absolute datum, unlike the legacy normalized
+`generate --sea-level`. Defaults are `--height-min-m 0 --height-range-m 400 --sea-level-m 80`,
+`--overview-resolution 512`, `--extent world`, `--boundary bounded`, and the regional control
+defaults in the table. Geometry, geography and seed must be explicit.
+
+```sh
+make world-create ARGS="--help" PROJECT=unused
+make world-select ARGS="--help" PROJECT=unused
+make region-export ARGS="--help" PROJECT=unused
+make test ARGS="tests/test_world_cli.py tests/test_regional.py"
+```
+
+World-linked water is unavailable. Overview and regional metadata report `water.status=omitted`,
+null coverage/resolution and `exact_global_drainage=false`, alongside `omitted_layers`. The
+overview's sea-datum shading is not a water network. `region-export --water none` is the default;
+requests such as `--water exact` or `--water coarse` fail before generation or output creation.
+The Python writer enforces the same rule with `write_region(..., water="none")`. It never runs
+local-edge ocean flooding on regions. Global water needs a separate continuity design before
+biomes, settlements, roads and borders can be offered for this workflow.

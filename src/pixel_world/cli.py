@@ -6,6 +6,7 @@ from pathlib import Path
 import click
 import typer
 
+from pixel_world import world_cli
 from pixel_world.params import Params
 from pixel_world.terrain import generate_terrain
 from pixel_world.water import accumulation, drainage, rivers
@@ -67,6 +68,11 @@ def generate_command(
 
 
 app.command("generate")(generate_command)
+app.command()(world_cli.world_create)
+app.command()(world_cli.world_info)
+app.command()(world_cli.world_overview)
+app.command()(world_cli.world_select)
+app.command()(world_cli.region_export)
 
 
 @app.command()

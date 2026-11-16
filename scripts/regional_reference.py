@@ -1,6 +1,8 @@
 """Generate regional fixtures and check assembled tiles, with measured process resource use."""
 
+import json
 import resource
+import subprocess
 import sys
 import time
 from dataclasses import replace
@@ -11,8 +13,18 @@ import numpy as np
 from pixel_world.overview import generate_overview
 from pixel_world.png import read_png
 from pixel_world.regional import Region, generate_region, region_context
-from pixel_world.world import WorldDefinition, canonical_json
-from pixel_world.writer import create_project, write_overview, write_region
+from pixel_world.world import canonical_json
+from pixel_world.writer import load_project
+
+
+def _command(project: Path, name: str, *args: object) -> dict:
+    result = subprocess.run(
+        [sys.executable, "-m", "pixel_world", name, "--project", str(project), *map(str, args)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
 
 
 def main(out: Path) -> None:
@@ -26,24 +38,55 @@ def main(out: Path) -> None:
     ):
         for iterations in (0, 4):
             size = 1024 if iterations == 0 else 512
-            world = WorldDefinition(
-                seed=42,
-                geography="region",
-                extent="region",
-                overview_resolution=32,
-                parameters=(("erosion_iterations", iterations),),
-                **dimensions,
-            )
-            if world.geometry == "flat":
-                region = Region(int(world.width_m * 0.4), int(world.height_m * 0.4), size, size)
-            else:
-                region = Region(-size // 2, -size // 2, size, size, anchor_lon=45, anchor_lat=0)
             path = out / f"{name}-erosion-{iterations}"
-            create_project(path, world)
+
+            dimension_args = [
+                item
+                for key, value in dimensions.items()
+                for item in ("--" + key.replace("_", "-"), value)
+            ]
+            _command(
+                path,
+                "world-create",
+                "--seed",
+                42,
+                "--geography",
+                "region",
+                "--extent",
+                "region",
+                "--overview-resolution",
+                32,
+                "--erosion-iterations",
+                iterations,
+                *dimension_args,
+            )
+            world = load_project(path).definition
+            x_px, y_px = (12.8, 12.8) if world.geometry == "flat" else (40, 16)
+            selected = _command(
+                path,
+                "world-select",
+                "--overview-x",
+                x_px,
+                "--overview-y",
+                y_px,
+                "--width",
+                size,
+                "--height",
+                size,
+            )
+            region = Region(**selected["grid"])
+            export_args = ["--x", region.x_m, "--y", region.y_m, "--width", size, "--height", size]
+            if region.anchor_lon is not None:
+                export_args += [
+                    "--anchor-lon",
+                    region.anchor_lon,
+                    "--anchor-lat",
+                    region.anchor_lat,
+                ]
             start = time.perf_counter()
-            directory = write_region(path, world, region)
+            directory = Path(_command(path, "region-export", *export_args)["directory"])
             elapsed = time.perf_counter() - start
-            peak_mib = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+            peak_mib = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / 1024
             pixels, depth, _ = read_png(directory / "heightmap.png")
             assert depth == 16
             left = generate_region(world, replace(region, width=size // 2))
@@ -53,7 +96,13 @@ def main(out: Path) -> None:
             assert np.array_equal(pixels, np.hstack((left, right))), "partition seam"
             raw = np.fromfile(directory / "heightmap.r16", dtype="<u2").reshape(pixels.shape)
             assert np.array_equal(raw, pixels), "R16 and PNG disagree"
-            write_overview(path, world, generate_overview(world))
+            previous = (directory / "heightmap.r16").read_bytes()
+            _command(path, "world-overview")
+            assert np.array_equal(
+                generate_overview(world), read_png(path / "overview/heightmap.png")[0]
+            )
+            assert (directory / "heightmap.r16").read_bytes() == previous
+            assert len(_command(path, "world-info")["coverage"]) == 2
             halo, scale_error = region_context(world, region)
             measurements.append(
                 dict(
@@ -62,12 +111,12 @@ def main(out: Path) -> None:
                     iterations=iterations,
                     halo_cells=halo,
                     elapsed_seconds=round(elapsed, 3),
-                    cumulative_process_peak_mib=round(peak_mib, 1),
+                    cumulative_child_peak_mib=round(peak_mib, 1),
                     scale_error=scale_error,
                     artifact_bytes=sum(p.stat().st_size for p in directory.iterdir()),
                 )
             )
-            print(f"{path.name}: {elapsed:.3f}s, process peak {peak_mib:.1f} MiB; tiles match")
+            print(f"{path.name}: {elapsed:.3f}s, child peak {peak_mib:.1f} MiB; tiles match")
     (out / "measurements.json").write_bytes(canonical_json(measurements))
 
 

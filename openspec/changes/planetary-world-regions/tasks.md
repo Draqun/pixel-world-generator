@@ -46,14 +46,14 @@ and ship no downstream layer that claims unsupported planet-scale correctness.
 
 ## 4. Location selection and integration
 
-- [ ] 4.1 Provide Make-accessible world/region commands and an overview-based selection workflow;
+- [x] 4.1 Provide Make-accessible world/region commands and an overview-based selection workflow;
   include direct coordinate selection without an overview and project resume commands;
   document geometry, scale, output contracts and both starting workflows;
   verify the documented workflows and returned coordinates on both geometries.
-- [ ] 4.2 Enforce and document water-layer fidelity and availability: no local-edge ocean outlets,
+- [x] 4.2 Enforce and document water-layer fidelity and availability: no local-edge ocean outlets,
   explicit rejection of unavailable exact global drainage and omitted layers in metadata; test
   failure before output creation and cross-region coarse-water consistency if such data is offered.
-- [ ] 4.3 Run end-to-end determinism, reference-sample, seam, physical-scale and resource checks;
+- [x] 4.3 Run end-to-end determinism, reference-sample, seam, physical-scale and resource checks;
   compare two seeds, repeated exports, A-then-B versus B-then-A, reopen without caches and
   region-first followed by overview against overview-first generation; document measured budgets,
   update algorithm version and

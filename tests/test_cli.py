@@ -48,7 +48,7 @@ def test_default_size_is_1024() -> None:
 def test_metadata_records_run_including_defaults(tmp_path: Path) -> None:
     run(tmp_path, "--seed", "7", "--octaves", "3", "--size", "64", "--erosion-iterations", "1")
     meta = json.loads((tmp_path / "metadata.json").read_text())
-    assert meta["seed"] == 7 and meta["generator_version"] == "0.6.0"
+    assert meta["seed"] == 7 and meta["generator_version"] == "0.7.0"
     assert meta["sea_level_m"] == 80.0
     assert meta["params"]["sea_level"] == 0.2
     assert meta["params"]["min_lake_depth_m"] == 1.0
@@ -129,7 +129,7 @@ def test_golden_hash_seed_42(tmp_path: Path) -> None:
         "heightmap.r16": "98664b4d42cdaf1fe5c8f797f1d667ad14ac7c615f2cfe2ee3702a0f78ff245e",
         "preview.png": "3f0dcae62515156d4f1ec45a4eb9e46912f5363315c785851efd6ee8df0fb6c0",
         "water.png": "1d992843364176ede3da84ffc8751bf2277a933d423ef93ac02d20784f4c814d",
-        "metadata.json": "f161bd0090d74cc8caf5919768fdc93fd9b709a0547ced4be768e486dd87bccf",
+        "metadata.json": "0e5f7197519bc22298256a20f25fb5f581aab19e0b41df527da0e7b158db367c",
     }
 
 
