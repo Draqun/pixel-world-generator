@@ -124,6 +124,15 @@ def test_create_select_export_and_resume(capsys, tmp_path, geometry):
         }
         assert "water" in metadata["omitted_layers"]
         assert not (metadata_path.parent / "water.png").exists()
+        if geometry == "sphere" and metadata_path.parent.name != "overview":
+            corners = [
+                local_to_lonlat(grid["anchor_lon"], grid["anchor_lat"], x, y, world.radius_m)
+                for x in (grid["x_m"], grid["x_m"] + grid["width"])
+                for y in (grid["y_m"], grid["y_m"] + grid["height"])
+            ]
+            assert np.array(metadata["projection"]["world_corners"]) == pytest.approx(
+                np.array(corners), rel=0, abs=1e-10
+            )
 
 
 @pytest.mark.parametrize("geometry", ["flat", "sphere"])
@@ -301,9 +310,8 @@ def test_make_workflow_in_fresh_processes(tmp_path, geometry):
     assert len(make("world-info")["coverage"]) == 2
 
 
-@pytest.mark.parametrize("geometry", ["flat", "sphere"])
-def test_world_artifact_golden(capsys, tmp_path, geometry):
-    create(capsys, tmp_path / "world", geometry)
+def test_flat_world_artifact_golden(capsys, tmp_path):
+    create(capsys, tmp_path / "world", "flat")
     selection = command(
         capsys,
         "world-select",
@@ -323,14 +331,10 @@ def test_world_artifact_golden(capsys, tmp_path, geometry):
     for name, file_hash in sorted(hashes(tmp_path / "world").items()):
         digest.update(name.encode() + file_hash.encode())
     # Includes definition, coverage, overview and PNG/R16/metadata for the eroded region.
+    # Spherical projection floats vary across platforms; their complete artifacts are compared
+    # within one platform in test_end_to_end_order_cache_independence_and_partition_hashes.
     # Update deliberately with the generator version when the artifact contract changes.
-    assert (
-        digest.hexdigest()
-        == {
-            "flat": "b564dd20aa4b93a0214f212091e334865fbd9f781cf4a1586a6c8ce4e84bbfce",
-            "sphere": "be393deb14cec54846c4b002ab01289091255626e69daab35adf077189a40c14",
-        }[geometry]
-    )
+    assert digest.hexdigest() == "b564dd20aa4b93a0214f212091e334865fbd9f781cf4a1586a6c8ce4e84bbfce"
 
 
 @pytest.mark.parametrize("geometry,resolution", [("flat", 8192), ("sphere", 1024)])
