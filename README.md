@@ -14,7 +14,7 @@ An island is a geography choice; the existing standalone command keeps its islan
 World commands support overview selection by pixel coordinates and direct regional exports.
 The interactive terminal form continues to generate standalone maps.
 
-See [the roadmap](openspec/roadmap.md) and
+See [the roadmap](docs/roadmap.md), [planning decisions](openspec/roadmap.md) and
 [world project proposal](openspec/changes/planetary-world-regions/proposal.md).
 World-linked water requires a separate continuity design before the remaining stages: biomes,
 settlements, roads and bridges, then borders. Existing downstream proposals target single maps.
