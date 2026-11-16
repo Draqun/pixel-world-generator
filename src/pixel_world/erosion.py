@@ -15,21 +15,23 @@ THERMAL_RATE = 0.5  # fraction of a slope's excess moved per iteration
 _NEIGHBOURS = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
 
 
-def _shifted(padded: NDArray[np.float64], n: int, dy: int, dx: int) -> NDArray[np.float64]:
-    return padded[1 + dy : 1 + dy + n, 1 + dx : 1 + dx + n]
+def _shifted(
+    padded: NDArray[np.float64], shape: tuple[int, int], dy: int, dx: int
+) -> NDArray[np.float64]:
+    return padded[1 + dy : 1 + dy + shape[0], 1 + dx : 1 + dx + shape[1]]
 
 
 def _steepest_descent(h: NDArray[np.float64]) -> tuple[NDArray[np.intp], NDArray[np.float64]]:
     """Flat index of each cell's steepest lower neighbour (itself if none) and the slope to it."""
-    n = h.shape[0]
+    rows, columns = h.shape
     padded = np.pad(h, 1, constant_values=np.inf)
-    own = np.arange(n * n).reshape(n, n)
+    own = np.arange(rows * columns).reshape(h.shape)
     target, slope = own.copy(), np.zeros_like(h)
     for dy, dx in _NEIGHBOURS:
-        drop = (h - _shifted(padded, n, dy, dx)) / np.hypot(dy, dx)
+        drop = (h - _shifted(padded, h.shape, dy, dx)) / np.hypot(dy, dx)
         better = drop > slope
         slope = np.where(better, drop, slope)
-        target = np.where(better, own + dy * n + dx, target)
+        target = np.where(better, own + dy * columns + dx, target)
     return target, slope
 
 
@@ -53,23 +55,22 @@ def _incise(h: NDArray[np.float64], strength: float) -> NDArray[np.float64]:
 
 def _relax(h: NDArray[np.float64], talus: float) -> NDArray[np.float64]:
     """Move material downhill wherever a slope is steeper than `talus` (mass is conserved)."""
-    n = h.shape[0]
     padded = np.pad(h, 1, constant_values=np.inf)
-    received = np.zeros((n + 2, n + 2))
+    received = np.zeros((h.shape[0] + 2, h.shape[1] + 2))
     given = np.zeros_like(h)
     for dy, dx in _NEIGHBOURS:
         dist = np.hypot(dy, dx)
-        excess = np.maximum(h - _shifted(padded, n, dy, dx) - talus * dist, 0.0)
+        excess = np.maximum(h - _shifted(padded, h.shape, dy, dx) - talus * dist, 0.0)
         move = THERMAL_RATE * excess / len(_NEIGHBOURS)
         given += move
-        _shifted(received, n, dy, dx)[...] += move
+        _shifted(received, h.shape, dy, dx)[...] += move
     return h - given + received[1:-1, 1:-1]
 
 
 def erode(
     height: NDArray[np.float64], iterations: int, strength: float, talus: float
 ) -> NDArray[np.float64]:
-    """Erode a square height grid. The outer ring of cells keeps its values."""
+    """Erode a rectangular height grid. The outer ring of cells keeps its values."""
     h = height.copy()
     ring = np.ones(h.shape, dtype=bool)
     ring[1:-1, 1:-1] = False

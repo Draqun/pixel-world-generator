@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 from dataclasses import asdict, fields
 from pathlib import Path
@@ -13,6 +14,7 @@ from numpy.typing import NDArray
 from pixel_world import __version__
 from pixel_world.params import Params
 from pixel_world.png import write_png8, write_png16
+from pixel_world.regional import Region, generate_region, region_metadata
 from pixel_world.world import (
     CoverageRecord,
     WorldDefinition,
@@ -160,3 +162,52 @@ def write_overview(out: Path, definition: WorldDefinition, pixels: NDArray[np.ui
             (directory / name).unlink(missing_ok=True)
         directory.rmdir()
         raise
+
+
+def write_region(out: Path, definition: WorldDefinition, region: Region) -> Path:
+    """Publish complete terrain artifacts once, then register their hashes atomically."""
+    from pixel_world.png import encode_png
+
+    project = load_project(out, expected=definition)
+    metadata = canonical_json(region_metadata(definition, region))
+    area_id = "region-" + hashlib.sha256(metadata).hexdigest()
+    directory = out / "regions" / area_id
+    if not directory.resolve().is_relative_to(out.resolve()):
+        raise ValueError("artifact escapes the project directory")
+    if directory.exists() or any(record.area_id == area_id for record in project.coverage):
+        raise FileExistsError("region already exists; select another area or use a fresh project")
+    pixels = generate_region(definition, region)
+    files = {
+        "heightmap.png": encode_png(pixels),
+        "heightmap.r16": pixels.astype("<u2").tobytes(),
+        "metadata.json": metadata,
+    }
+    parent_existed = directory.parent.exists()
+    directory.parent.mkdir(exist_ok=True)
+    staged = Path(tempfile.mkdtemp(prefix=".region-", dir=directory.parent))
+    published = False
+    try:
+        for name, data in files.items():
+            with (staged / name).open("wb") as stream:
+                stream.write(data)
+                stream.flush()
+                os.fsync(stream.fileno())
+        os.replace(staged, directory)
+        published = True
+        record = CoverageRecord(
+            area_id,
+            tuple(
+                (f"regions/{area_id}/{name}", hashlib.sha256(data).hexdigest())
+                for name, data in files.items()
+            ),
+        )
+        write_coverage(out, WorldProject(definition, (*project.coverage, record)))
+    except BaseException:
+        # A signal can arrive after the atomic index commit; indexed files must survive.
+        if published and any(r.area_id == area_id for r in load_project(out).coverage):
+            raise
+        shutil.rmtree(directory if published else staged)
+        if not parent_existed:
+            directory.parent.rmdir()
+        raise
+    return directory

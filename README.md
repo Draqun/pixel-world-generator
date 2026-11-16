@@ -6,11 +6,12 @@ Same seed + same generator version = same world.
 
 ## Direction and current status
 
-Terrain, water and the interactive terminal interface are implemented. The next planned terrain
-milestone is persistent world projects: start with a whole-world overview or only a needed region,
-save the project, then generate more areas of the same world without changing existing terrain.
+Terrain, water and the interactive terminal interface are implemented. The Python API supports
+persistent world projects, coarse overviews and aligned regional terrain exports: start with a
+whole-world overview or only a needed region, save the project, then generate more areas of the
+same world without changing existing terrain.
 An island is a geography choice; the existing standalone command keeps its island default.
-These project/world operations are planned, not available commands yet.
+Interactive world selection and dedicated world/region commands are the next planned slice.
 
 See [the roadmap](openspec/roadmap.md) and
 [world project proposal](openspec/changes/planetary-world-regions/proposal.md).
@@ -281,3 +282,117 @@ in about 0.1 seconds; timings depend on the machine. Schema 2 adds starting exte
 0.5.0 introduces coarse geography. Earlier foundation manifests require their recorded generator;
 there is no automatic migration. Existing standalone terrain and water sample hashes are preserved;
 only their recorded generator version changes.
+
+### Shared terrain and regional export
+
+Generator 0.6.0 adds regional exports through the Python API; use a new project because saved
+0.5.0 projects require their recorded generator. It keeps the coarse geography samples and all
+legacy standalone terrain/water pixel bytes unchanged. CLI selection is still planned.
+
+```python
+from pathlib import Path
+from pixel_world.regional import Region
+from pixel_world.world import WorldDefinition
+from pixel_world.writer import create_project, load_project, write_region
+
+path = Path("out/regions-example")  # new directory
+world = WorldDefinition(
+    seed=42,
+    geometry="flat",
+    geography="region",
+    extent="region",
+    width_m=16_000_000,
+    height_m=16_000_000,
+    overview_resolution=64,
+    parameters=(("erosion_iterations", 4),),
+)
+create_project(path, world)
+first = write_region(path, world, Region(1_000_000, 1_000_000, 512, 512))
+# Reopen later; no overview or transient cache is needed.
+world = load_project(path).definition
+second = write_region(path, world, Region(1_000_512, 1_000_000, 512, 512))
+```
+
+Each export creates `regions/region-<request-hash>/heightmap.png`, `heightmap.r16` and
+`metadata.json`, then publishes their SHA-256 hashes in `coverage.json`. PNG and headerless
+little-endian R16 contain identical uint16 samples. Metadata records the world identity,
+dimensions, grid, all effective controls, projection corners, distortion including context,
+overview anchor formula, vertical datum and omitted layers. Decode elevation as
+`height_min_m + sample / 65535 * height_range_m`; subtract `sea_level_m` for sea-relative height.
+There is no per-region normalization. These exports omit water, biomes, settlements, roads and
+borders; regional edges are not ocean outlets.
+
+`Region` uses integer metre edges and positive integer width/height. Pixel `(column,row)` samples
+the cell centre `(x_m+column+0.5, y_m+row+0.5)`, with x right and y down. Thus 1024 square pixels
+cover a 1024 by 1024 metre footprint, with one height sample per 1 m² cell. Samples are one metre
+apart. Engines do not infer this physical scale from a PNG or raw file: their importer must use
+the recorded spacing, datum and axis mapping. A mesh of 1024 sample-centre vertices has 1023
+one-metre intervals, so an importer must handle the half-cell boundary and neighbouring samples
+when reconstructing a continuous surface. This generator exports data, not an engine importer.
+
+For flat worlds, requests must fit y and, for bounded worlds, x. East-west wrapping accepts
+negative or beyond-width x origins, canonicalizes sample positions, and permits at most one
+circumference per request. At physical world boundaries erosion context is clamped to the nearest
+valid world position; no boundary is imposed at a requested region's edge.
+
+For spheres, supply `Region(..., anchor_lon=45, anchor_lat=0)` with longitude/latitude in degrees.
+All partitions of one area must retain the same anchor and integer metre grid offsets. The
+azimuthal equidistant projection maps x east/right and y south/down; its recorded anchor is fixed
+in world space rather than recentered on each tile. Matching positions sample a Cartesian field
+across cube faces, poles and the longitude seam. One global undistorted square grid is not
+promised. The maximum tangential scale error is `(d/R)/sin(d/R)-1` at the farthest corner,
+including erosion context; requests exceeding 1% fail before files are created. Projected pixel
+spacing is one metre; actual surface distances can differ within the disclosed tolerance.
+
+Terrain adds four smooth, spatially hashed value-noise levels with nominal spacing
+512/128/32/8 metres and weights 1/0.5/0.25/0.125, using the independent `world.detail` stream.
+Flat x periods are integer world-lattice periods, so their exact spacing is `width_m/ceil(width_m/spacing)`.
+Spheres sample three-dimensional Cartesian lattices in metres; detail vanishes at the poles.
+A smooth gate vanishes at every saved overview anchor, whether or not its image exists.
+The same coarse field and shared uint16 quantization preserve all reference values; the overview
+still does not resolve coastlines or terrain between anchors. Seed, coordinates and settings,
+rather than tile names or request order, determine the result.
+
+Supported `WorldDefinition.parameters` for regional generation (unknown keys are rejected):
+
+| Parameter | Default | Meaning and limits |
+| --- | --- | --- |
+| `detail_amplitude_m` | 8 | Maximum residual amplitude, 0 through `height_range_m` |
+| `erosion_iterations` | 0 | Integer 0–64; 0 disables erosion |
+| `erosion_strength` | 0.02 | Fractional stream-power incision coefficient, 0–1 |
+| `erosion_talus` | 0.01 | Height fraction per metre for thermal slope threshold, 0–1 |
+
+Regional erosion reuses the existing 12-hop stream-power accumulation and thermal relaxation.
+It is bounded approximate erosion, not exact global catchment hydrology. Target selection adds
+one dependency cell to the 12 accumulation hops; thermal transfer adds two more. Therefore each
+iteration depends on input heights at most 15 cells away, in the Chebyshev metric. Positive
+iteration counts use a halo of `15*iterations+1` cells; the extra cell excludes the fixed outer
+ring. After erosion, gate its displacement from the original terrain to preserve overview
+anchors. Matching samples on the same canonical grid remain byte-identical across partitions.
+
+The output **plus context** must contain at most 1,048,576 samples:
+`(width+2*halo)*(height+2*halo) <= 1_048_576`. Without erosion, 1024² fits; with four iterations
+(halo 61), the largest square output is 902². Sampling uses 64-row batches; erosion allocates
+only bounded working arrays. World dimensions/radius and grid coordinates are limited to 2**50
+metres for spatial-key/floating-point precision. Oversized requests fail before allocation or
+output creation, with an actionable size, iteration or projection error.
+
+Publication uses flushed staged files, a directory rename and an atomic coverage-index replace.
+Failures clean up the new export and preserve prior artifacts. Writes require one process per
+project. A hard process or machine crash can leave an unregistered new directory: existing
+artifacts remain intact; inspect and remove only that unregistered directory before retrying.
+Existing registered exports are never replaced. Generating an overview later leaves regional
+hashes unchanged. Continuation does not resize worlds or migrate generator versions.
+
+```sh
+make regional-reference OUT=out/regional-demo  # fresh destination; six checked projects
+make test ARGS="tests/test_regional.py tests/test_erosion.py"
+```
+
+The reference target checks assembled tiles against full exports, PNG/R16 agreement and
+region-first generation followed by an overview. It writes `measurements.json` with elapsed
+export times, artifact sizes and cumulative process peak RSS (Linux). A reference run used
+about 82 MiB peak RSS: 1024² without erosion took 0.44–0.75 s, and 512² with four erosion
+iterations took 0.41–0.62 s across 16-km and 16-million-metre flat worlds and a sphere at a cube
+face seam. These are measurements, not hardware-independent limits. Tests instrument sampling
+batch sizes to verify allocation is independent of total physical world area.

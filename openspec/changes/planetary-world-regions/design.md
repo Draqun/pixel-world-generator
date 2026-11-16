@@ -147,6 +147,47 @@ pipeline already works at planetary scale.
   the coarse field, retaining standalone terrain/water samples and deliberately updating version
   metadata. Previous foundation manifests require their recorded generator; no implicit migration.
 
+## Section 3 implementation plan and dependency proof
+
+Implement section 3 inline, using the existing world/project APIs and NumPy only. The scope is
+`regional.py` (pure sampling, validated grid, metadata), `erosion.py` (rectangular support),
+`writer.py` (transactional regional publication), regional/erosion tests, README, a Make reference
+script, changelog and the two version declarations. Legacy terrain/water pixel goldens stay fixed.
+
+1. Test coordinate-keyed refinement and overview anchors, then implement `terrain_samples(world,
+   first, second)` with four smooth hashed value-noise levels at nominal 512/128/32/8 metre spacing.
+   Flat x lattices have integer world periods; spherical lattices use Cartesian positions rather
+   than face-local keys. A smooth residual gate vanishes at the saved overview centre samples.
+   Use an independent `world.detail` stream, a shared vertical encoding, and no local normalization.
+2. Test partitioned, wrapped and spherical grids and the erosion halo, then implement
+   `Region(x_m, y_m, width, height, anchor_lon=None, anchor_lat=None)` and
+   `generate_region(world, region)`. Integer metre edges sample at half-integer pixel centres.
+   Spherical partitions retain one recorded azimuthal equidistant anchor; validate the farthest
+   corner including context against 1% distortion. Flat world boundaries clamp context positions;
+   only x wraps. Requests and working context are limited to 1,048,576 samples, sampled in row
+   batches of 64, with at most 64 erosion iterations. Reject unsupported parameter keys and
+   coordinates beyond 2**50 metres (floating point/spatial-key precision).
+3. Test repeat hashes, opposite request orders, reopen, interrupted writes and PNG/R16 agreement;
+   implement `write_region(out, definition, region)` using a deterministic request-derived area ID,
+   staging plus directory rename, then atomic coverage publication. Never replace old artifacts.
+4. Document the APIs, budgets and Make reference generation, bump generator to 0.6.0, deliberately
+   update only legacy version metadata goldens, run `make check`, review the diff and open one PR.
+   CLI selection and downstream generation remain section 4.
+
+**Erosion bound:** steepest-descent targets and slopes depend on the radius-1 D8 neighbourhood.
+After k accumulation sweeps, area at a cell depends on targets within k hops: height radius k+1.
+The existing SWEEPS=12 therefore gives incision radius 13, including the downstream floor.
+Thermal relaxation receives contributions from radius-1 neighbours whose outgoing transfers use
+their own radius-1 neighbourhood, so relaxation alone has radius 2. Its composed incision input
+thus needs radius 15 per iteration (not 14). Use `15 * iterations + 1` context cells; the extra
+cell excludes the implementation's fixed outer ring. This is bounded approximate catchment
+incision, not exact global drainage. Accumulation counts remain exact integers at this budget;
+fixed neighbour order preserves partition-independent floating point addition. Preserve overview
+anchors after erosion by gating its displacement relative to the original anchored terrain.
+
+Review focus: nonfinite/boolean controls, wrapped edges and sphere poles, requests near physical
+bounds, projection distortion including halos, and write/index failures must all have tests.
+
 ## Risks / Trade-offs
 
 - [Spherical grids cannot preserve all metre distances globally] → record projection and measured

@@ -51,3 +51,15 @@ def test_pit_is_not_dug_deeper() -> None:
     h[8, 8] = 0.1
     out = erode(h, 30, 0.2, 0.5)
     assert out.min() >= 0.1 - 1e-12
+
+
+def test_proven_halo_matches_full_rectangular_catchment() -> None:
+    from pixel_world.erosion import SWEEPS
+
+    # Strong relief and low talus exercise both accumulation and two-hop transfers.
+    height = np.random.default_rng(42).random((140, 170))
+    for iterations in (1, 3):
+        halo = (SWEEPS + 3) * iterations + 1
+        full = erode(height, iterations, 0.05, 0.001)
+        local = erode(height[60 - halo : 70 + halo, 70 - halo : 90 + halo], iterations, 0.05, 0.001)
+        assert np.array_equal(full[60:70, 70:90], local[halo:-halo, halo:-halo])
