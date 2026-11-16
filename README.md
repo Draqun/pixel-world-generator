@@ -15,7 +15,7 @@ World commands support overview selection by pixel coordinates and direct region
 The interactive terminal form continues to generate standalone maps.
 
 See [the roadmap](docs/roadmap.md), [planning decisions](openspec/roadmap.md) and
-[world project proposal](openspec/changes/planetary-world-regions/proposal.md).
+[world project proposal](openspec/changes/archive/2026-11-16-planetary-world-regions/proposal.md).
 World-linked water requires a separate continuity design before the remaining stages: biomes,
 settlements, roads and bridges, then borders. Existing downstream proposals target single maps.
 
@@ -126,9 +126,9 @@ MIT, see `LICENSE`.
 
 ## World project foundation
 
-The world-project API provides persisted definitions, coordinate conversions and coarse overviews.
-Regional terrain exports and the world/region CLI remain planned. The
-existing `make generate` and `make interactive` workflows still generate standalone islands.
+The world-project API and CLI provide persisted definitions, coordinate conversions, coarse
+overviews and aligned regional terrain exports. The existing `make generate` and
+`make interactive` workflows still generate standalone islands.
 
 A project contains:
 
@@ -138,8 +138,8 @@ A project contains:
   Numeric parameters remain reserved configuration; the current coarse field has fixed, versioned rules.
 - `coverage.json`: separately versioned, canonically ordered completed areas and relative artifact
   paths with SHA-256 hashes. Adding coverage checks completed artifact hashes, preserves existing
-  records and atomically replaces only this index. An area's own metadata will locate its bounds
-  and projection when regional export is implemented.
+  records and atomically replaces only this index. Each region's metadata records its bounds
+  and projection.
 
 Developer API (no raster is required to create or reopen a project):
 
@@ -171,9 +171,9 @@ with incompatible expected settings, unknown versions, incomplete definitions or
 fails without writing. Project writes currently require one process per project.
 
 Physical world dimensions, coordinate origin, seed, versions, vertical encoding and geography
-are fixed at project creation. Generating further coverage will materialize more of that world,
-not stretch its existing terrain or move the origin. Starting with an overview or only a region
-will use this same saved definition. A later overview must use the original field and sampling
+are fixed at project creation. Generating further coverage materializes more of that world
+without stretching existing terrain or moving the origin. Starting with an overview or only a region
+uses this same saved definition. A later overview must use the original field and sampling
 rules. Caches and in-memory state are disposable. Copies with identical definitions share their
 content identity but can be continued independently. Reproduction is guaranteed on the same
 platform and supported generator version; unsupported versions require their recorded generator.
