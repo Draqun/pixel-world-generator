@@ -37,16 +37,19 @@ extent limit. No unlimited-world or real-time streaming guarantee is implied.
 
 ## Current status and next sequence
 
+Only unfinished lifecycle work belongs in this table. Archived changes are removed; consult
+`changes/archive/` and the changelog for completed work. Status markers follow the
+[public roadmap legend](../docs/roadmap.md#status-legend).
+
 | Change | Status | Next action |
 | --- | --- | --- |
-| terrain-generation | Implemented and archived | Preserve legacy output compatibility |
-| [water-generation](changes/archive/2026-11-16-water-generation/proposal.md) | Implemented and archived 2026-11-16; surface-water spec synchronized | Preserve standalone water; design global hydrology separately |
-| interactive-typer-cli | All tasks complete and merged | Owner confirmation, sync interactive-world-cli, archive |
-| [planetary-world-regions](changes/archive/2026-11-16-planetary-world-regions/proposal.md) | Sections 1–4 implemented: projects, overview, regional terrain and CLI workflows | Owner review complete; specs synchronized and archived 2026-11-16; design global water next |
-| biome-generation | Planned for existing single-map water | Defer world-linked implementation until global water has a contract |
-| settlement-generation | Planned, depends on biomes | Defer until biomes are merged for the target workflow |
-| roads-and-bridges | Planned, depends on settlements | Defer until settlements are merged for the target workflow |
-| border-generation | Planned, depends on transport | Defer until transport is merged for the target workflow |
+| interactive-typer-cli | ✅ 4/4 tasks complete and merged; 0 slices remaining | Owner confirmation, sync interactive-world-cli, archive |
+| generated-output-readmes | 📝 0/5 tasks; 1 slice remaining | Implement generated file guides and reference navigation |
+| Globally consistent water | 📝 No proposal yet | Define the world-linked water continuity contract and slices |
+| biome-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await the global water contract; reconcile the single-map proposal before world-linked implementation |
+| settlement-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await biomes and a world-linked placement contract |
+| roads-and-bridges | ⏸️ 0/6 tasks; 3 slices remaining | Await settlements and a cross-region network contract |
+| border-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await transport and a cross-region territory contract |
 
 The unimplemented `terrain-layouts` plan is absorbed into `planetary-world-regions`, not archived
 as completed work. Geography selection and terrain contract changes have one owner. Island

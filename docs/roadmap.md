@@ -1,10 +1,24 @@
+# Roadmap
+
+Only unfinished work is listed below. Remove archived changes from the queue; their history
+remains in `openspec/changes/archive/` and the changelog.
+
 | Order | Change | Scope | Status / next step |
 | --- | --- | --- | --- |
-| 1 | [water-generation](../openspec/changes/archive/2026-11-16-water-generation/tasks.md) | Sea, lakes and rivers for standalone maps | Complete; specs synchronized and archived 2026-11-16 |
-| 2 | [interactive-typer-cli](../openspec/changes/interactive-typer-cli/tasks.md) | Interactive standalone-map generation and preview | The single slice is complete; owner confirmation, spec synchronization and archive remain |
-| 3 | [generated-output-readmes](../openspec/changes/generated-output-readmes/tasks.md) | Generated file guides, scale explanations and reference-suite navigation | Proposed; 1 slice pending |
-| 4 | Globally consistent water (new change) | Water shared by world regions, independent of export order and artificial region edges | Next generation-stage proposal; define the continuity contract and implementation slices |
-| 5 | [biome-generation](../openspec/changes/biome-generation/tasks.md) | Physical slope, moisture and biome layers | 2 slices pending; reconcile the single-map proposal with the global water contract before world-linked implementation |
-| 6 | [settlement-generation](../openspec/changes/settlement-generation/tasks.md) | Towns, villages and fortresses | 2 slices pending; follows biomes, with a world-linked placement contract needed |
-| 7 | [roads-and-bridges](../openspec/changes/roads-and-bridges/tasks.md) | Terrain-aware roads and river crossings | 3 slices pending; follows settlements, with a cross-region network contract needed |
-| 8 | [border-generation](../openspec/changes/border-generation/tasks.md) | Territories and border layers | 2 slices pending; follows roads and bridges, with a cross-region territory contract needed |
+| 1 | [interactive-typer-cli](../openspec/changes/interactive-typer-cli/tasks.md) | Interactive standalone-map generation and preview | ✅ 4/4 tasks complete; 0 slices remaining; owner confirmation, spec synchronization and archive remain |
+| 2 | [generated-output-readmes](../openspec/changes/generated-output-readmes/tasks.md) | Generated file guides, scale explanations and reference-suite navigation | 📝 0/5 tasks; 1 slice pending |
+| 3 | Globally consistent water (new change) | Water shared by world regions, independent of export order and artificial region edges | 📝 Not yet proposed; define the continuity contract and implementation slices |
+| 4 | [biome-generation](../openspec/changes/biome-generation/tasks.md) | Physical slope, moisture and biome layers | ⏸️ 0/4 tasks; 2 slices; world-linked implementation awaits the global water contract and reconciliation of the single-map proposal |
+| 5 | [settlement-generation](../openspec/changes/settlement-generation/tasks.md) | Towns, villages and fortresses | ⏸️ 0/4 tasks; 2 slices; awaits biomes and a world-linked placement contract |
+| 6 | [roads-and-bridges](../openspec/changes/roads-and-bridges/tasks.md) | Terrain-aware roads and river crossings | ⏸️ 0/6 tasks; 3 slices; awaits settlements and a cross-region network contract |
+| 7 | [border-generation](../openspec/changes/border-generation/tasks.md) | Territories and border layers | ⏸️ 0/4 tasks; 2 slices; awaits transport and a cross-region territory contract |
+
+## Status legend
+
+- 📝 Proposed: artifacts exist but implementation has not started; an unlinked entry still needs a proposal.
+- 🚧 In progress: proposal or implementation work is underway, including an open PR.
+- ✅ Complete: all tasks are checked; owner acceptance, spec synchronization or archive remains.
+- ⏸️ Blocked: the row names the dependency or decision needed to continue.
+- 📦 Archived: complete and archived; remove the row from this queue.
+
+Task counts come from `openspec list --json`. Keep them and slice counts current as work lands.

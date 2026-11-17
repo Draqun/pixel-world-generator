@@ -27,7 +27,13 @@ Build them in this order; each depends on the previous one.
 - Run the OpenSpec CLI with `OPENSPEC_TELEMETRY=0` (the `Makefile` sets it).
 - Archive a change (`openspec archive <change>`) only in its last PR, after the owner confirmed it works.
 - When synchronizing specs or archiving a change, update both `docs/roadmap.md` and
-  `openspec/roadmap.md` in the same PR, including statuses, next steps and links to moved artifacts.
+  `openspec/roadmap.md` in the same PR. Remove archived changes from the active tables and
+  renumber the remaining queue; history belongs in `openspec/changes/archive/` and the changelog.
+- Keep both roadmaps current when proposing changes and delivering slices, using the reference
+  project's status markers: 📝 proposed, 🚧 in progress, ✅ tasks complete awaiting acceptance
+  or archive, ⏸️ blocked (state the blocker), 📦 archived (remove from the active queue).
+  Include completed/total task counts from `openspec list --json` and the remaining slice count;
+  a planned item without artifacts must say that a proposal is still needed.
 
 ## Determinism rules (binding)
 
