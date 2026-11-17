@@ -34,6 +34,8 @@ same platform; `metadata.json` records the seed, generator version and every par
 `heightmap.png` is 16-bit grayscale, 1 px = 1 m; `heightmap.r16` holds the same values as a
 headerless little-endian uint16 raw file (row-major, top row first), the format Godot terrain addons
 import as R16/RAW; `preview.png` is the same image in 8 bits.
+Each new output includes an English `README.md` with a file table, grayscale and water-label
+interpretation, dimensions, metre scale, vertical decoding and omitted layers.
 
 `make interactive` opens a keyboard- and mouse-accessible form. Tab moves between fields;
 choose a size preset or enter a custom size, enter a seed, and review the explained settings.
@@ -239,6 +241,10 @@ scale_m = overview_scale(project.definition, *position)
 reference values, world identity and unresolved-detail limitations. Completed files are indexed
 in `coverage.json`; `world.json` and earlier regional artifacts remain unchanged. Existing overview
 directories are refused, so reference generation must use a fresh destination.
+New project roots include a static `README.md` explaining the immutable definition, live coverage
+index and optional exports. Each overview includes its own guide to projection-dependent scale
+and shared vertical datum. Area guides participate in coverage hashes; editing them invalidates
+the indexed artifact. Older projects remain readable without guides and are not retrofitted.
 
 For flat worlds the longest image side has `overview_resolution` samples; the other side follows
 its aspect ratio, rounded to the nearest integer with a minimum of one. Centre `(column,row)`
@@ -316,8 +322,8 @@ second = write_region(path, world, Region(1_000_512, 1_000_000, 512, 512))
 ```
 
 Each export creates `regions/region-<request-hash>/heightmap.png`, `heightmap.r16` and
-`metadata.json`, then publishes their SHA-256 hashes in `coverage.json`. PNG and headerless
-little-endian R16 contain identical uint16 samples. Metadata records the world identity,
+`metadata.json` plus a generated `README.md`, then publishes their SHA-256 hashes in
+`coverage.json`. PNG and headerless little-endian R16 contain identical uint16 samples. Metadata records the world identity,
 dimensions, grid, all effective controls, projection corners, distortion including context,
 overview anchor formula, vertical datum and omitted layers. Decode elevation as
 `height_min_m + sample / 65535 * height_range_m`; subtract `sea_level_m` for sea-relative height.
@@ -390,6 +396,11 @@ hashes unchanged. Continuation does not resize worlds or migrate generator versi
 make regional-reference OUT=out/regional-demo  # fresh destination; six checked projects
 make test ARGS="tests/test_regional.py tests/test_erosion.py"
 ```
+
+Both reference targets write a suite `README.md` linking the generated project guides and images.
+The overview guide explains the eight fixtures and `reference.png` row/column layout and shading;
+the regional guide explains the six fixture names, measurements and automated checks separately
+from visual judgment. These guides use relative links and contain no machine-specific timings.
 
 The reference target uses fresh CLI processes for project creation, selection, export, overview
 and resume, and checks assembled tiles against full exports and PNG/R16 agreement. It writes

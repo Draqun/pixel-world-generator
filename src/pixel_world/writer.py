@@ -23,6 +23,158 @@ from pixel_world.world import (
 )
 
 
+def _file_table(files: dict[str, str]) -> str:
+    return "| File | Purpose |\n| --- | --- |\n" + "".join(
+        f"| [{name}]({name}) | {purpose} |\n" for name, purpose in sorted(files.items())
+    )
+
+
+def _standalone_readme(params: Params) -> str:
+    files = {
+        "README.md": "This generated guide.",
+        "heightmap.png": "Authoritative 16-bit single-channel grayscale height data.",
+        "heightmap.r16": "The same uint16 values, headerless little-endian, row-major.",
+        "preview.png": "8-bit grayscale preview only; do not use for terrain heights.",
+        "water.png": "8-bit categorical labels: 0 = dry, 1 = sea, 2 = lake, 3 = river.",
+        "metadata.json": "Seed, generator version, all parameters and water legend.",
+    }
+    return f"""# Standalone map
+
+{_file_table(files)}
+## Scale and interpretation
+
+All rasters are {params.size} × {params.size} pixels; 1 pixel = 1 metre horizontally.
+The origin is top-left, x right and y down. Raw rows use the same orientation.
+Height grayscale runs from dark (low) to light (high). Heights are locally normalized
+for this standalone map; they do not share a world-project datum.
+Decode a 16-bit value as `height_m = value / 65535 * {params.height_range_m}`.
+The encoded minimum is 0 m; the full range is {params.height_range_m} m.
+Sea level is {params.sea_level * params.height_range_m} m above that minimum;
+subtract it for sea-relative elevation. The preview loses height precision.
+Water is a label map, not grayscale elevation or water depth.
+Biomes, settlements, roads and borders are absent.
+
+This guide is generated deterministically with the data. See metadata.json for the
+recorded generation inputs; this directory can be moved without changing the data.
+"""
+
+
+def _world_description(world: WorldDefinition) -> str:
+    if world.geometry == "flat":
+        dimensions = (
+            f"width {world.width_m} m × height {world.height_m} m; {world.boundary} boundary"
+        )
+    else:
+        dimensions = f"radius {world.radius_m} m; complete sphere"
+    return (
+        f"Geometry: {world.geometry}; {dimensions}.\n"
+        f"Geography: {world.geography}; extent: {world.extent}.\n"
+    )
+
+
+def _project_readme(world: WorldDefinition) -> str:
+    files = {
+        "README.md": "This static generated guide; later exports do not rewrite it.",
+        "world.json": (
+            "Immutable world definition: identity, seed, versions, dimensions, "
+            "datum and parameters."
+        ),
+        "coverage.json": "Live index of completed areas and their artifact SHA-256 hashes.",
+    }
+    return f"""# World project
+
+{_world_description(world)}
+{_file_table(files)}
+The optional `overview/` directory is created only when an overview is exported;
+its README.md explains the coarse heightmap.png and metadata.json.
+The optional `regions/` directory contains `region-<request-hash>/` exports, each
+with README.md, heightmap.png, heightmap.r16 and metadata.json. These directories
+may not exist yet. Consult coverage.json for what has actually been generated.
+
+Each export belongs to this saved definition, regardless of export order.
+Area guides are generated, hash-indexed artifacts: editing one invalidates its
+coverage hash. Older projects without guides remain readable and are not retrofitted.
+World-linked water, biomes, settlements, roads and borders are absent.
+"""
+
+
+def _area_readme(world: WorldDefinition, meta: dict) -> str:
+    regional = "grid" in meta
+    files = {
+        "README.md": "This generated, hash-indexed guide; edits invalidate the coverage hash.",
+        "heightmap.png": "Authoritative 16-bit single-channel grayscale height samples.",
+    }
+    if regional:
+        files["heightmap.r16"] = "The same uint16 values, headerless little-endian, row-major."
+    files["metadata.json"] = (
+        "World identity, seed, version, sampling, projection and vertical datum."
+    )
+    projection = meta["projection"]
+    if regional:
+        grid = meta["grid"]
+        kind = "Regional terrain"
+        sampling = (
+            f"Dimensions: {grid['width']} × {grid['height']} pixels. Grid origin: "
+            f"({grid['x_m']}, {grid['y_m']}) m.\n"
+            "Sampling: 1 pixel = 1 metre on the regional grid; samples are at pixel centres.\n"
+        )
+        if world.geometry == "sphere":
+            sampling += (
+                f"Projection: {projection['name']}, fixed anchor longitude "
+                f"{projection['anchor_lon']}°, latitude {projection['anchor_lat']}°.\n"
+                "Maximum scale distortion including erosion context: "
+                f"{projection['max_scale_error']}.\n"
+                "One-metre grid spacing has projection distortion away from the anchor;\n"
+                "see metadata.json projection limits and world corners.\n"
+            )
+        else:
+            sampling += "Projection: flat; the grid uses world metres.\n"
+    else:
+        kind = "World overview"
+        sampling = (
+            f"Dimensions: {meta['columns']} × {meta['rows']} pixels. "
+            f"Projection: {projection['name']}.\n"
+            "This is coarse, projection-dependent sampling at pixel centres.\n"
+            "Coastlines between samples and fine terrain are unresolved; samples do not\n"
+            "represent uniform land/sea footprints. No regional erosion is applied.\n"
+        )
+        if world.geometry == "flat":
+            sampling += (
+                f"Pixel spacing: {projection['pixel_width_m']} m horizontally, "
+                f"{projection['pixel_height_m']} m vertically.\n"
+            )
+        else:
+            sampling += (
+                f"Longitude step: {projection['longitude_step_degrees']}°; "
+                f"latitude step: {projection['latitude_step_degrees']}°.\n"
+                "The top edge is 90° N, left edge 180° W; longitude increases right,\n"
+                "latitude decreases down. "
+                f"Equatorial pixel spacing: {projection['equatorial_pixel_width_m']} m; "
+                f"north-south spacing: {projection['pixel_height_m']} m.\n"
+                "East-west span = equatorial span * cos(latitude); poles collapse.\n"
+            )
+    return f"""# {kind}
+
+{_world_description(world)}
+{_file_table(files)}
+## Scale and interpretation
+
+{sampling}
+Image origin is top-left, x right and y down. Height grayscale runs from dark (low)
+to light (high), using the shared world encoding, without per-export normalization.
+Decode `height_m = {meta["height_min_m"]} + value / 65535 * {meta["height_range_m"]}`.
+The encoded minimum is {meta["height_min_m"]} m; the full range is {meta["height_range_m"]} m.
+Sea datum is {meta["sea_level_m"]} m; subtract it from height_m for sea-relative elevation.
+Sea-datum height shading does not supply a water mask or river network.
+
+Omitted layers: {", ".join(meta["omitted_layers"])}. No world-linked water or exact global
+drainage is available. No preview image is exported here.
+See metadata.json for the recorded contract and coverage.json at the project root
+for artifact hashes. The project definition is world.json; this guide stays unchanged
+when neighbours or a later overview are generated.
+"""
+
+
 def write_world(
     out: Path, height: NDArray[np.uint16], water: NDArray[np.uint8], params: Params
 ) -> None:
@@ -45,6 +197,8 @@ def write_world(
         json.dumps(meta, sort_keys=True, indent=2) + "\n", encoding="utf-8"
     )
 
+    (out / "README.md").write_text(_standalone_readme(params), encoding="utf-8")
+
 
 def create_project(out: Path, definition: WorldDefinition) -> WorldProject:
     """Create project files without replacing an existing directory or its contents."""
@@ -57,8 +211,9 @@ def create_project(out: Path, definition: WorldDefinition) -> WorldProject:
     try:
         (out / "world.json").write_bytes(manifest)
         (out / "coverage.json").write_bytes(coverage)
+        (out / "README.md").write_text(_project_readme(definition), encoding="utf-8")
     except OSError:
-        for name in ("world.json", "coverage.json"):
+        for name in ("world.json", "coverage.json", "README.md"):
             (out / name).unlink(missing_ok=True)
         out.rmdir()
         raise
@@ -139,13 +294,18 @@ def write_overview(out: Path, definition: WorldDefinition, pixels: NDArray[np.ui
     from pixel_world.png import encode_png
 
     project = load_project(out, expected=definition)
-    metadata = canonical_json(overview_metadata(definition, pixels))
+    meta = overview_metadata(definition, pixels)
+    metadata = canonical_json(meta)
     image = encode_png(pixels)
     if any(record.area_id == "overview" for record in project.coverage):
         raise FileExistsError("overview already registered")
     directory = out / "overview"
     directory.mkdir()
-    files = {"heightmap.png": image, "metadata.json": metadata}
+    files = {
+        "heightmap.png": image,
+        "metadata.json": metadata,
+        "README.md": _area_readme(definition, meta).encode("utf-8"),
+    }
     try:
         for name, data in files.items():
             (directory / name).write_bytes(data)
@@ -171,7 +331,8 @@ def write_region(
     from pixel_world.png import encode_png
 
     project = load_project(out, expected=definition)
-    metadata = canonical_json(region_metadata(definition, region, water=water))
+    meta = region_metadata(definition, region, water=water)
+    metadata = canonical_json(meta)
     area_id = "region-" + hashlib.sha256(metadata).hexdigest()
     directory = out / "regions" / area_id
     if not directory.resolve().is_relative_to(out.resolve()):
@@ -183,6 +344,7 @@ def write_region(
         "heightmap.png": encode_png(pixels),
         "heightmap.r16": pixels.astype("<u2").tobytes(),
         "metadata.json": metadata,
+        "README.md": _area_readme(definition, meta).encode("utf-8"),
     }
     parent_existed = directory.parent.exists()
     directory.parent.mkdir(exist_ok=True)

@@ -2,7 +2,7 @@
 
 This is a planning index, not evidence that pending features are implemented. Current main specs
 cover seeded terrain, standalone surface water, world geography, regional materialization,
-interactive CLI and release management. Every named pending change has proposal, specs, design
+interactive CLI, generated output documentation and release management. Every named pending change has proposal, specs, design
 and tasks; implementation requires a separate apply request. Globally consistent water still
 needs a proposal. Each tasks section is one PR.
 
@@ -43,7 +43,6 @@ Only unfinished lifecycle work belongs in this table. Archived changes are remov
 
 | Change | Status | Next action |
 | --- | --- | --- |
-| generated-output-readmes | 📝 0/5 tasks; 1 slice remaining | Implement generated file guides and reference navigation |
 | Globally consistent water | 📝 No proposal yet | Define the world-linked water continuity contract and slices |
 | biome-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await the global water contract; reconcile the single-map proposal before world-linked implementation |
 | settlement-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await biomes and a world-linked placement contract |

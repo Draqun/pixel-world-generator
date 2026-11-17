@@ -31,6 +31,7 @@ def main(out: Path) -> None:
     """Write six new reference projects; assert partition identity, including eroded terrain."""
     out.mkdir(parents=True)
     measurements = []
+    links = []
     for name, dimensions in (
         ("flat-small", dict(geometry="flat", width_m=16000, height_m=16000)),
         ("flat-large", dict(geometry="flat", width_m=16000000, height_m=16000000)),
@@ -85,6 +86,12 @@ def main(out: Path) -> None:
                 ]
             start = time.perf_counter()
             directory = Path(_command(path, "region-export", *export_args)["directory"])
+            links.append(
+                f"| {path.name} | [{path.name}]({path.name}/README.md) | "
+                f"[Overview]({path.name}/overview/heightmap.png) | "
+                f"[Region]({directory.relative_to(out).as_posix()}/heightmap.png) | "
+                f"[Region guide]({directory.relative_to(out).as_posix()}/README.md) |"
+            )
             elapsed = time.perf_counter() - start
             peak_mib = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / 1024
             pixels, depth, _ = read_png(directory / "heightmap.png")
@@ -118,6 +125,49 @@ def main(out: Path) -> None:
             )
             print(f"{path.name}: {elapsed:.3f}s, child peak {peak_mib:.1f} MiB; tiles match")
     (out / "measurements.json").write_bytes(canonical_json(measurements))
+    (out / "README.md").write_text(
+        """# Regional reference suite
+
+Six seed-42 projects compare regional terrain at different world scales and across
+a spherical cube-face seam. Start with a project guide, then view its overview
+and regional height images. Both use dark-to-low, light-to-high 16-bit grayscale
+with the same world datum; image viewers may make subtle height changes hard to see.
+
+- `flat-small`: a 16000 × 16000 m flat world.
+- `flat-large`: a 16000000 × 16000000 m flat world.
+- `sphere-seam`: a sphere of radius 6000000 m, selected across the cube-face seam
+  at longitude 45°, near the equator.
+- `erosion-0`: no erosion; 1024 × 1024 one-metre regional samples.
+- `erosion-4`: four erosion passes; 512 × 512 one-metre regional samples.
+
+Overview pixels are coarse samples, not one-metre pixels. Spherical region grids
+use a fixed azimuthal-equidistant anchor; see their metadata for distortion limits.
+No water, biomes, settlements, roads or borders are generated.
+
+| Fixture | Project guide | Coarse image | Detailed image | Detail guide |
+| --- | --- | --- | --- | --- |
+"""
+        + "\n".join(links)
+        + """
+
+## Suite files and checks
+
+[README.md](README.md) is this entry point. [measurements.json](measurements.json)
+records each project's region size, erosion iterations, context halo, projection
+scale error and artifact byte count (including the regional guide). Elapsed seconds
+and cumulative child-process peak RSS in MiB are machine-specific observations,
+not deterministic output or performance guarantees. Peak RSS is cumulative across
+children, not an isolated measurement of each export.
+
+Automated assertions compare a full region with two independently generated halves
+(seam/partition identity), decode PNG and R16 and compare values, reproduce the
+overview, preserve existing regional R16 bytes when adding a later overview, and
+check that both areas are registered. Each CLI action uses a fresh process.
+Terrain appearance and whether erosion looks convincing still require visual
+judgment; these checks do not prove hydrology or other omitted layers.
+""",
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":

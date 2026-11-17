@@ -1,0 +1,1 @@
+Generate deterministic English file and scale guides for standalone maps, world projects, overviews and regional exports, plus linked entry-point guides for both reference suites. Include area guides in publication hashes and preserve older projects without retrofitting.

@@ -64,7 +64,14 @@ FIELDS = {
     ),
     "max_river_width": (int, "Maximum river width in pixels (at least 1)", Params.max_river_width),
 }
-OUTPUTS = ("heightmap.png", "heightmap.r16", "preview.png", "water.png", "metadata.json")
+OUTPUTS = (
+    "heightmap.png",
+    "heightmap.r16",
+    "preview.png",
+    "water.png",
+    "metadata.json",
+    "README.md",
+)
 
 
 class ConfirmOverwrite(ModalScreen[bool]):

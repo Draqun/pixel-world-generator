@@ -11,7 +11,7 @@ from pixel_world.coordinates import local_to_lonlat
 from pixel_world.overview import generate_overview, overview_scale, overview_to_world
 from pixel_world.png import read_png
 from pixel_world.regional import Region, generate_region
-from pixel_world.world import WorldDefinition
+from pixel_world.world import WorldDefinition, canonical_json
 from pixel_world.writer import create_project, load_project, write_region
 
 
@@ -328,13 +328,28 @@ def test_flat_world_artifact_golden(capsys, tmp_path):
     export(capsys, tmp_path / "world", selection["grid"])
     command(capsys, "world-overview", tmp_path / "world")
     digest = hashlib.sha256()
+    old_data_digest = hashlib.sha256()
     for name, file_hash in sorted(hashes(tmp_path / "world").items()):
         digest.update(name.encode() + file_hash.encode())
+        if name.endswith("README.md"):
+            continue
+        if name == "coverage.json":
+            coverage = json.loads((tmp_path / "world/coverage.json").read_bytes())
+            for area in coverage["areas"]:
+                area["artifacts"] = [
+                    pair for pair in area["artifacts"] if not pair[0].endswith("README.md")
+                ]
+            file_hash = hashlib.sha256(canonical_json(coverage)).hexdigest()
+        old_data_digest.update(name.encode() + file_hash.encode())
+    # Preserve the pre-guide golden after removing only the additive documentation entries.
+    assert old_data_digest.hexdigest() == (
+        "b564dd20aa4b93a0214f212091e334865fbd9f781cf4a1586a6c8ce4e84bbfce"
+    )
     # Includes definition, coverage, overview and PNG/R16/metadata for the eroded region.
     # Spherical projection floats vary across platforms; their complete artifacts are compared
     # within one platform in test_end_to_end_order_cache_independence_and_partition_hashes.
-    # Update deliberately with the generator version when the artifact contract changes.
-    assert digest.hexdigest() == "b564dd20aa4b93a0214f212091e334865fbd9f781cf4a1586a6c8ce4e84bbfce"
+    # Update deliberately when adding artifacts; numerical changes also bump the version.
+    assert digest.hexdigest() == "223f70b2f899a7aeb64b9ed3825723136e3dcafb7f97f3c984e26ec8fd7155f3"
 
 
 @pytest.mark.parametrize("geometry,resolution", [("flat", 8192), ("sphere", 1024)])
