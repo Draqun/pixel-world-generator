@@ -5,7 +5,7 @@ remains in `openspec/changes/archive/` and the changelog.
 
 | Order | Change | Scope | Status / next step |
 | --- | --- | --- | --- |
-| 1 | Globally consistent water (new change) | Water shared by world regions, independent of export order and artificial region edges | 📝 Not yet proposed; define the continuity contract and implementation slices |
+| 1 | [globally-consistent-water](../openspec/changes/globally-consistent-water/tasks.md) | Shared hierarchical water, optional major-water overview and smaller regional waterways | 📝 Proposed; 0/14 tasks; 5 slices remaining; review model fidelity and terrain conditioning before implementation |
 | 2 | [biome-generation](../openspec/changes/biome-generation/tasks.md) | Physical slope, moisture and biome layers | ⏸️ 0/4 tasks; 2 slices; world-linked implementation awaits the global water contract and reconciliation of the single-map proposal |
 | 3 | [settlement-generation](../openspec/changes/settlement-generation/tasks.md) | Towns, villages and fortresses | ⏸️ 0/4 tasks; 2 slices; awaits biomes and a world-linked placement contract |
 | 4 | [roads-and-bridges](../openspec/changes/roads-and-bridges/tasks.md) | Terrain-aware roads and river crossings | ⏸️ 0/6 tasks; 3 slices; awaits settlements and a cross-region network contract |
