@@ -3,8 +3,8 @@
 This is a planning index, not evidence that pending features are implemented. Current main specs
 cover seeded terrain, standalone surface water, world geography, regional materialization,
 interactive CLI, generated output documentation and release management. Every named pending change has proposal, specs, design
-and tasks; implementation requires a separate apply request. Globally consistent water still
-needs a proposal. Each tasks section is one PR.
+and tasks; implementation requires a separate apply request. Globally consistent water now has
+a proposal for review; no hydrology implementation is complete. Each tasks section is one PR.
 
 ## Sources and confidence
 
@@ -43,7 +43,7 @@ Only unfinished lifecycle work belongs in this table. Archived changes are remov
 
 | Change | Status | Next action |
 | --- | --- | --- |
-| Globally consistent water | 📝 No proposal yet | Define the world-linked water continuity contract and slices |
+| [globally-consistent-water](changes/globally-consistent-water/proposal.md) | 📝 Proposed; 0/14 tasks; 5 slices remaining | Review hierarchical model, optional major-water overview, detailed waterways and versioned terrain conditioning |
 | biome-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await the global water contract; reconcile the single-map proposal before world-linked implementation |
 | settlement-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await biomes and a world-linked placement contract |
 | roads-and-bridges | ⏸️ 0/6 tasks; 3 slices remaining | Await settlements and a cross-region network contract |
@@ -69,8 +69,8 @@ remains the legacy command default for compatibility, not the mandatory shape of
 Each numbered tasks section remains one implementation PR. Do not start the next section before
 its PR is open. This planning revision does not mark any implementation task complete.
 
-Next design globally consistent water, then biomes, settlements, roads/bridges and borders in the
-binding stage order. Existing downstream plans remain useful for the single-map pipeline; they
+Next review and implement globally-consistent-water in its five PR slices, then reconcile biomes,
+settlements, roads/bridges and borders in the binding stage order. Existing downstream plans remain useful for the single-map pipeline; they
 are not contracts for cross-region continuity and need reconciliation before world-linked use.
 Do not run edge-seeded local water on arbitrary exported regions as if their edges were oceans.
 
@@ -83,8 +83,13 @@ regions share one vertical encoding; only legacy standalone maps normalize over 
 The designs choose concrete defaults so later implementation does not have to invent an API.
 These are new planning choices for owner review, not historical agreements:
 
-- Water: boundary-connected ocean, priority-flood lake surfaces, exact catchment accumulation,
-  acyclic flat routing and bounded channel symbols.
+- Standalone water: boundary-connected ocean, priority-flood lake surfaces, exact raster catchment
+  accumulation, acyclic flat routing and bounded channel symbols.
+- World-linked water ([proposal](changes/globally-consistent-water/proposal.md)): bounded global
+  backbone plus canonical refinement; model-estimated drainage, stable cross-region features,
+  optional major-only overview and smaller regional water. New enabled worlds include versioned
+  terrain conditioning; water visibility does not change terrain. Exact metre-scale global
+  drainage remains unavailable. Technical defaults are proposed choices awaiting review.
 - Biomes: physical slope, freshwater-distance/noise moisture proxy and six explicit categories.
 - Settlements: greedy spaced suitability maxima, kind-specific masks and explicit count shortfalls.
 - Transport: A* over dry ground plus bounded cardinal bridges, with a reachable spanning forest.
