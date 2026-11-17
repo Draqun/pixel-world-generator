@@ -26,6 +26,8 @@ Build them in this order; each depends on the previous one.
   run `make check`, open the PR, stop. Never start the next slice before the PR is open.
 - Run the OpenSpec CLI with `OPENSPEC_TELEMETRY=0` (the `Makefile` sets it).
 - Archive a change (`openspec archive <change>`) only in its last PR, after the owner confirmed it works.
+- When synchronizing specs or archiving a change, update both `docs/roadmap.md` and
+  `openspec/roadmap.md` in the same PR, including statuses, next steps and links to moved artifacts.
 
 ## Determinism rules (binding)
 

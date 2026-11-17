@@ -1,6 +1,6 @@
 | Order | Change | Scope | Status / next step |
 | --- | --- | --- | --- |
-| 1 | [water-generation](../openspec/changes/water-generation/tasks.md) | Sea, lakes and rivers for standalone maps | All 3 slices complete; owner confirmation, spec synchronization and archive remain |
+| 1 | [water-generation](../openspec/changes/archive/2026-11-16-water-generation/tasks.md) | Sea, lakes and rivers for standalone maps | Complete; specs synchronized and archived 2026-11-16 |
 | 2 | [interactive-typer-cli](../openspec/changes/interactive-typer-cli/tasks.md) | Interactive standalone-map generation and preview | The single slice is complete; owner confirmation, spec synchronization and archive remain |
 | 3 | [generated-output-readmes](../openspec/changes/generated-output-readmes/tasks.md) | Generated file guides, scale explanations and reference-suite navigation | Proposed; 1 slice pending |
 | 4 | Globally consistent water (new change) | Water shared by world regions, independent of export order and artificial region edges | Next generation-stage proposal; define the continuity contract and implementation slices |
