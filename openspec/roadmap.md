@@ -43,7 +43,7 @@ Only unfinished lifecycle work belongs in this table. Archived changes are remov
 
 | Change | Status | Next action |
 | --- | --- | --- |
-| generated-output-readmes | 📝 0/5 tasks; 1 slice remaining | Implement generated file guides and reference navigation |
+| generated-output-readmes | ✅ 5/5 tasks; 0 slices remaining | [PR #29](https://github.com/Draqun/pixel-world-generator/pull/29) open; await owner acceptance, then synchronize specs and archive |
 | Globally consistent water | 📝 No proposal yet | Define the world-linked water continuity contract and slices |
 | biome-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await the global water contract; reconcile the single-map proposal before world-linked implementation |
 | settlement-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await biomes and a world-linked placement contract |

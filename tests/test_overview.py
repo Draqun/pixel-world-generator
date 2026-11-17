@@ -35,7 +35,11 @@ def test_extent_is_independent_and_persisted_without_overview(tmp_path):
     b = replace(a, extent="world")
     create_project(tmp_path / "a", a)
     assert load_project(tmp_path / "a").definition.extent == "region"
-    assert sorted(p.name for p in (tmp_path / "a").iterdir()) == ["coverage.json", "world.json"]
+    assert sorted(p.name for p in (tmp_path / "a").iterdir()) == [
+        "README.md",
+        "coverage.json",
+        "world.json",
+    ]
     assert np.array_equal(generate_overview(a), generate_overview(b))
     with pytest.raises(ValueError):
         replace(a, extent="unknown")

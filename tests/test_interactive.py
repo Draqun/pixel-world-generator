@@ -31,7 +31,8 @@ def test_form_explains_settings_and_allows_generation(tmp_path: Path) -> None:
     asyncio.run(exercise())
 
 
-def test_invalid_and_overwrite_require_confirmation(tmp_path: Path) -> None:
+@pytest.mark.parametrize("existing", ["water.png", "README.md"])
+def test_invalid_and_overwrite_require_confirmation(tmp_path: Path, existing: str) -> None:
     async def exercise() -> None:
         app = WorldApp()
         async with app.run_test(size=(120, 50)) as pilot:
@@ -45,13 +46,13 @@ def test_invalid_and_overwrite_require_confirmation(tmp_path: Path) -> None:
             await pilot.pause()
             assert not list(tmp_path.iterdir())
             app.query_one("#size", Input).value = "64"
-            (tmp_path / "water.png").write_bytes(b"keep")
+            (tmp_path / existing).write_bytes(b"keep")
             await pilot.click("#generate")
             await pilot.pause()
-            assert (tmp_path / "water.png").read_bytes() == b"keep"
+            assert (tmp_path / existing).read_bytes() == b"keep"
             assert "overwrite" in str(app.screen.query_one(Static).render()).lower()
             await pilot.click("#cancel")
-            assert (tmp_path / "water.png").read_bytes() == b"keep"
+            assert (tmp_path / existing).read_bytes() == b"keep"
 
     asyncio.run(exercise())
 

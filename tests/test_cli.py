@@ -10,7 +10,7 @@ from pixel_world.params import Params
 from pixel_world.png import read_png
 
 FAST = ["--size", "64", "--octaves", "2", "--erosion-iterations", "2"]
-FILES = ("heightmap.png", "heightmap.r16", "preview.png", "metadata.json", "water.png")
+FILES = ("heightmap.png", "heightmap.r16", "preview.png", "metadata.json", "water.png", "README.md")
 
 
 def run(out: Path, *args: str) -> int:
@@ -121,10 +121,11 @@ def test_bad_input_exits_nonzero_and_writes_nothing(tmp_path: Path, args: list[s
 
 
 def test_golden_hash_seed_42(tmp_path: Path) -> None:
-    # Update only together with a generator_version bump (algorithm change).
+    # Existing data hashes change only with a generator_version bump (algorithm change).
     # Same-platform contract: zlib and numpy are not pinned across machines.
     run(tmp_path, "--seed", "42", "--size", "128")
     assert digests(tmp_path) == {
+        "README.md": "d30fad3a622e566aa5490497a064d6d0d6c1130b50bd0bda30a8979e61b13562",
         "heightmap.png": "17009a7ac83b5ece48bd626dac9945138249abd045748e9b0edea554eb9fbc72",
         "heightmap.r16": "98664b4d42cdaf1fe5c8f797f1d667ad14ac7c615f2cfe2ee3702a0f78ff245e",
         "preview.png": "3f0dcae62515156d4f1ec45a4eb9e46912f5363315c785851efd6ee8df0fb6c0",

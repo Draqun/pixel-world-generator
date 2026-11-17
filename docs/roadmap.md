@@ -5,7 +5,7 @@ remains in `openspec/changes/archive/` and the changelog.
 
 | Order | Change | Scope | Status / next step |
 | --- | --- | --- | --- |
-| 1 | [generated-output-readmes](../openspec/changes/generated-output-readmes/tasks.md) | Generated file guides, scale explanations and reference-suite navigation | 📝 0/5 tasks; 1 slice pending |
+| 1 | [generated-output-readmes](../openspec/changes/generated-output-readmes/tasks.md) | Generated file guides, scale explanations and reference-suite navigation | ✅ 5/5 tasks; 0 slices remaining; [PR #29](https://github.com/Draqun/pixel-world-generator/pull/29) open; awaiting owner acceptance and archive |
 | 2 | Globally consistent water (new change) | Water shared by world regions, independent of export order and artificial region edges | 📝 Not yet proposed; define the continuity contract and implementation slices |
 | 3 | [biome-generation](../openspec/changes/biome-generation/tasks.md) | Physical slope, moisture and biome layers | ⏸️ 0/4 tasks; 2 slices; world-linked implementation awaits the global water contract and reconciliation of the single-map proposal |
 | 4 | [settlement-generation](../openspec/changes/settlement-generation/tasks.md) | Towns, villages and fortresses | ⏸️ 0/4 tasks; 2 slices; awaits biomes and a world-linked placement contract |
