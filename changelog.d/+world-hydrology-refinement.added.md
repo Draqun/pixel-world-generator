@@ -1,0 +1,1 @@
+Add internal canonical world-water refinement with shared flux ports, smaller connected rivers and lakes, stable cross-region geometry and bounded query work. Public water export awaits terrain conditioning.

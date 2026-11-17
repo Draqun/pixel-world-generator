@@ -144,6 +144,24 @@ procedural drainage budgets, not recomputed fine-terrain catchments. Width is a 
 function of that model budget,
 `min(64, max(1, sqrt(area_m2 / 1_000_000)))` metres. No later query changes a parent width.
 
+The internal implementation uses rectilinear carrier paths with exact rational/cube-vector port
+identities. Constraints stop at the prescribed outgoing interface; boundary-only curves carry
+transport only when an imported port matches their profile. Sea/lake polygons take surface
+precedence over covered curve segments. Ordinary child interfaces crossing an active inherited
+carrier use that curve's surface; upstream potentials accommodate the shared datum without
+changing the carrier's exact locked ports. Low prescribed inlets use constrained least-excavation
+routes around higher immutable carriers. New geometry is excluded if its first physical
+contact lies below the containing child's prescribed outlet, preventing a new incidental sink.
+New curves explicitly preserve all crossed transport-point datums. Low inlet paths may use
+an exact shared outlet corner instead of a higher edge midpoint. Candidate carriers undergo a
+bounded, terrain-free feasibility check of the sixteen child routing graphs and are excluded
+if they block an existing lower inlet. Query order never participates in those choices.
+New basin polygons reserve 1/16 child-span banks on their outer boundary, keeping their surface
+away from unrelated transport ports; lake thresholds use the inset polygon's physical area.
+Explicit shore-to-receiver spill descriptors remain present below the river display threshold.
+The query accepts at most 64 windows and streams intersecting canonical patches depth first,
+with no persistent fine cache. A fixed 128 m context crosses wrapped and cube-face boundaries.
+
 New small basins belong to a canonical parent and must lie inside that parent's dry footprint;
 their outlets join its prescribed drainage. Larger basins crossing child cells are defined by
 the common ancestor, not independently fitted by the children. A basin crossing an export edge
