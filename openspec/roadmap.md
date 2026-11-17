@@ -4,7 +4,7 @@ This is a planning index, not evidence that pending features are implemented. Cu
 cover seeded terrain, standalone surface water, world geography, regional materialization,
 interactive CLI, generated output documentation and release management. Every named pending change has proposal, specs, design
 and tasks; implementation requires a separate apply request. Globally consistent water now has
-a proposal for review; no hydrology implementation is complete. Each tasks section is one PR.
+an implementation in progress; the definition and global backbone are complete; public water export remains unavailable. Each tasks section is one PR.
 
 ## Sources and confidence
 
@@ -43,7 +43,7 @@ Only unfinished lifecycle work belongs in this table. Archived changes are remov
 
 | Change | Status | Next action |
 | --- | --- | --- |
-| [globally-consistent-water](changes/globally-consistent-water/proposal.md) | 📝 Proposed; 0/14 tasks; 5 slices remaining | Review hierarchical model, optional major-water overview, detailed waterways and versioned terrain conditioning |
+| [globally-consistent-water](changes/globally-consistent-water/proposal.md) | 🚧 In progress; 3/14 tasks; 4 slices remaining | Cell-owned backbone complete; next implement canonical refinement, then terrain conditioning and world water exports |
 | biome-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await the global water contract; reconcile the single-map proposal before world-linked implementation |
 | settlement-generation | ⏸️ 0/4 tasks; 2 slices remaining | Await biomes and a world-linked placement contract |
 | roads-and-bridges | ⏸️ 0/6 tasks; 3 slices remaining | Await settlements and a cross-region network contract |

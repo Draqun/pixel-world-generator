@@ -1,0 +1,1 @@
+Add an internal cell-owned world hydrology backbone with validated model definitions, global drainage, shared shoreline geometry and deterministic water feature identities; enabled world exports remain unavailable until terrain conditioning is implemented.
