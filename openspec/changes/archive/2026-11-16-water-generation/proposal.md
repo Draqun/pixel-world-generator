@@ -26,4 +26,4 @@ None. Existing outputs remain present; the water layer is additive.
 
 Depends on completed terrain-generation. Extends Params, CLI, metadata, writer and integration
 tests; adds pure hydrology functions. No new runtime dependency, game code or simulation of weather.
-Original scope and proposed technical choices are distinguished in ../../roadmap.md.
+Original scope and proposed technical choices are distinguished in ../../../roadmap.md.

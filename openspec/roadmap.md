@@ -1,9 +1,9 @@
 # World generation roadmap and recovered decisions
 
 This is a planning index, not evidence that pending features are implemented. Current main specs
-cover seeded terrain, world geography, regional materialization and release management. Water and
-interactive CLI are implemented and merged but await owner confirmation, spec synchronization
-and archive. Every pending change has proposal, specs, design
+cover seeded terrain, standalone surface water, world geography, regional materialization and
+release management. Interactive CLI is implemented and merged but awaits owner confirmation,
+spec synchronization and archive. Every pending change has proposal, specs, design
 and tasks; implementation requires a separate apply request. Each tasks section is one PR.
 
 ## Sources and confidence
@@ -40,7 +40,7 @@ extent limit. No unlimited-world or real-time streaming guarantee is implied.
 | Change | Status | Next action |
 | --- | --- | --- |
 | terrain-generation | Implemented and archived | Preserve legacy output compatibility |
-| water-generation | All tasks complete and merged | Owner confirmation, sync surface-water, archive |
+| [water-generation](changes/archive/2026-11-16-water-generation/proposal.md) | Implemented and archived 2026-11-16; surface-water spec synchronized | Preserve standalone water; design global hydrology separately |
 | interactive-typer-cli | All tasks complete and merged | Owner confirmation, sync interactive-world-cli, archive |
 | [planetary-world-regions](changes/archive/2026-11-16-planetary-world-regions/proposal.md) | Sections 1–4 implemented: projects, overview, regional terrain and CLI workflows | Owner review complete; specs synchronized and archived 2026-11-16; design global water next |
 | biome-generation | Planned for existing single-map water | Defer world-linked implementation until global water has a contract |

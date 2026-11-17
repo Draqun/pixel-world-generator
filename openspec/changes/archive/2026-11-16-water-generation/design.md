@@ -5,7 +5,7 @@
 Terrain generation returns uint16 heights; CLI currently writes all four outputs itself. Params,
 step_rng, grayscale PNG encoding and hash-based integration tests already exist. Erosion has a
 private D8 helper and only twelve accumulation sweeps: it is an erosion approximation, not a
-complete drainage solution. See proposal.md and ../../roadmap.md for intent and provenance.
+complete drainage solution. See proposal.md and ../../../roadmap.md for intent and provenance.
 
 ## Goals / Non-Goals
 
