@@ -5,7 +5,7 @@ remains in `openspec/changes/archive/` and the changelog.
 
 | Order | Change | Scope | Status / next step |
 | --- | --- | --- | --- |
-| 1 | [globally-consistent-water](../openspec/changes/globally-consistent-water/tasks.md) | Shared hierarchical water, optional major-water overview and smaller regional waterways | 🚧 In progress; 3/14 tasks; 4 slices remaining; cell-owned global backbone complete, refinement and public water export pending |
+| 1 | [globally-consistent-water](../openspec/changes/globally-consistent-water/tasks.md) | Shared hierarchical water, optional major-water overview and smaller regional waterways | 🚧 In progress; 6/14 tasks; 3 slices remaining; backbone and canonical refinement complete, terrain conditioning and public water export pending |
 | 2 | [biome-generation](../openspec/changes/biome-generation/tasks.md) | Physical slope, moisture and biome layers | ⏸️ 0/4 tasks; 2 slices; world-linked implementation awaits the global water contract and reconciliation of the single-map proposal |
 | 3 | [settlement-generation](../openspec/changes/settlement-generation/tasks.md) | Towns, villages and fortresses | ⏸️ 0/4 tasks; 2 slices; awaits biomes and a world-linked placement contract |
 | 4 | [roads-and-bridges](../openspec/changes/roads-and-bridges/tasks.md) | Terrain-aware roads and river crossings | ⏸️ 0/6 tasks; 3 slices; awaits settlements and a cross-region network contract |

@@ -13,9 +13,9 @@ section before that PR is open. Do not expose incomplete enabled-world generatio
 
 ## 2. Canonical refinement and shared water geometry
 
-- [ ] 2.1 Add parent-keyed refinement patches, canonical ports and inherited geometry/flux constraints; verify neighbouring patches and cube seams share ports, child routing terminates, local source areas and imported port flux conserve outlet budgets without double counting at a two-parent confluence and parent paths/widths/surfaces do not change when children are queried in opposite orders.
-- [ ] 2.2 Add smaller tributaries and parent-owned lake geometry down to the saved minimum scale; verify a confluence, a lake spanning output boundaries, terminal-basin connections and stable feature IDs across cropped, overlapping and whole-area queries, and document excluded subscale features.
-- [ ] 2.3 Bound refinement work, geometry complexity and caches without upstream expansion; verify explicit patch/vertex/depth failures and equal-query bounded work on small and planetary worlds, and document resource limits before exposing the solver publicly.
+- [x] 2.1 Add parent-keyed refinement patches, canonical ports and inherited geometry/flux constraints; verify neighbouring patches and cube seams share ports, child routing terminates, local source areas and imported port flux conserve outlet budgets without double counting at a two-parent confluence and parent paths/widths/surfaces do not change when children are queried in opposite orders.
+- [x] 2.2 Add smaller tributaries and parent-owned lake geometry down to the saved minimum scale; verify a confluence, a lake spanning output boundaries, terminal-basin connections and stable feature IDs across cropped, overlapping and whole-area queries, and document excluded subscale features.
+- [x] 2.3 Bound refinement work, geometry complexity and caches without upstream expansion; verify explicit patch/vertex/depth failures and equal-query bounded work on small and planetary worlds, and document resource limits before exposing the solver publicly.
 
 ## 3. Water-compatible terrain and versioned enabled worlds
 

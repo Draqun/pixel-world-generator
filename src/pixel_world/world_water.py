@@ -18,6 +18,7 @@ LIMITS = {
     "backbone_vertices": 1_048_576,
     "geometry_vertices": 1_048_576,
     "refinement_patches": 65_536,
+    "refinement_windows": 64,
     "cache_bytes": 64 * 1024 * 1024,
 }
 
@@ -67,6 +68,7 @@ class HydrologyDefinition:
             "bank_width_factor": 2,
             "max_bank_span_m": 128,
             "anchor_clearance_m": 1,
+            "lake_bank_fraction": 0.0625,
             "width_area_scale_m2": 1_000_000,
             "limits": dict(LIMITS),
         }

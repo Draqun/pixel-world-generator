@@ -16,8 +16,8 @@ The interactive terminal form continues to generate standalone maps.
 
 See [the roadmap](docs/roadmap.md), [planning decisions](openspec/roadmap.md) and
 [world project proposal](openspec/changes/archive/2026-11-16-planetary-world-regions/proposal.md).
-World-linked water has an [internal global backbone](docs/world-hydrology.md); refinement and
-water-compatible terrain are still pending before export support and the remaining stages: biomes,
+World-linked water has an [internal backbone and canonical refinement](docs/world-hydrology.md);
+water-compatible terrain is still pending before export support and the remaining stages: biomes,
 settlements, roads and bridges, then borders. Existing downstream proposals target single maps.
 
 ## Usage
