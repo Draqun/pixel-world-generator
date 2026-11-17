@@ -1,15 +1,15 @@
 # Tasks
 
-Planning only: no implementation is completed. Each numbered section is one PR. For every
+Implementation is delivered one numbered section per PR. For every
 section, include its tests and docs, run make check, add a changelog fragment, update both
 roadmaps with CLI task counts and remaining slices, open the PR, then stop. Do not begin the next
 section before that PR is open. Do not expose incomplete enabled-world generation as supported.
 
 ## 1. World hydrology definition and global backbone
 
-- [ ] 1.1 Add the validated immutable hydrology definition/model identity and independent named streams, retaining disabled-world defaults; verify round trips, canonical IDs, invalid finite/unit/threshold/version controls and no-write rejection in focused world/seed tests, and document the pending enabled workflow.
-- [ ] 1.2 Implement pure bounded backbone topology, ocean components, seeded priority-flood, terminal basins and physical-area accumulation; verify synthetic inland depressions, no-ocean worlds, true bounded outlets, wrap seams, cube edges/corners/poles, authoritative ocean polygons, coarse coastal islands, area conservation and acyclic routing without touching standalone pixel goldens.
-- [ ] 1.3 Add backbone/depth preflight and stable feature/basin IDs, widths and surfaces; verify repeat hashes of serialized pure results, independent stream isolation and allocation bounds, and document the model's ocean convention and estimated drainage units.
+- [x] 1.1 Add the validated immutable hydrology definition/model identity and independent named streams, retaining disabled-world defaults; verify round trips, canonical IDs, invalid finite/unit/threshold/version controls and no-write rejection in focused world/seed tests, and document the pending enabled workflow.
+- [x] 1.2 Implement pure bounded backbone topology, ocean components, seeded priority-flood, terminal basins and physical-area accumulation; verify synthetic inland depressions, no-ocean worlds, true bounded outlets, wrap seams, cube edges/corners/poles, authoritative ocean polygons, coarse coastal islands, area conservation and acyclic routing without touching standalone pixel goldens.
+- [x] 1.3 Add backbone/depth preflight and stable feature/basin IDs, widths and surfaces; verify repeat hashes of serialized pure results, independent stream isolation and allocation bounds, and document the model's ocean convention and estimated drainage units.
 
 ## 2. Canonical refinement and shared water geometry
 

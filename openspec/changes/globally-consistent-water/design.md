@@ -104,6 +104,20 @@ invented sea or region-edge outlet. Assign physical cell-area budgets and accumu
 topological order. Counts are exact on this chosen graph; their interpretation as real terrain
 catchment area is approximate. Major features are selected from this complete backbone.
 
+Implementation detail for slice 1: each quadrilateral parent owns one centre routing site,
+its physical cell area and one prescribed downstream edge port or true world outlet. Incoming
+flux and the cell's own source area remain distinct. Spherical areas sum the two physical
+triangles of each quad. Integer cube keys make shared edge/corner ownership exact. Retained lake
+cells route to one deterministic spill before recomputing ranks and accumulation.
+
+Shoreline geometry uses a separate fixed eight-triangle fan per cell: centre, shared edge
+midpoints and corners. Edge heights average the adjacent centre samples; corner heights take
+the maximum incident sample, preventing diagonal low cells from connecting across a dry cell.
+This supplies a continuous piecewise-linear coarse shoreline while the parent routing domains
+remain quadrilateral. Future refinements consume the prescribed shared ports and frozen geometry.
+The internal definition round-trips independently; saved schema 3 and enabled-world persistence
+remain in slice 3, so earlier slices cannot publish incompatible unconditioned worlds.
+
 ### 4. Refine canonical cells, never output rectangles
 
 A refinement patch is one whole parent cell and its 4 by 4 child graph. Its inputs are the parent
@@ -137,7 +151,7 @@ is therefore still one feature.
 
 Ocean geometry has a separate authoritative rule: build a continuous piecewise-linear
 below-datum footprint from the backbone samples, clip it to the identified ocean components,
-and freeze that polygon geometry. Use fixed diagonal triangulation per canonical face cell and
+and freeze that polygon geometry. Use the fixed conforming fan triangulation described above and
 shared edge intersections/ownership, including cube corners; all distances and surface geometry
 are interpreted in world space. Refinement can subdivide its edges but cannot discover straits,
 new coastal islands or new ocean connectivity. An isolated fine below-datum depression outside

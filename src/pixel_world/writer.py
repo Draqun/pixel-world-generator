@@ -7,6 +7,7 @@ import shutil
 import tempfile
 from dataclasses import asdict, fields
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
@@ -21,6 +22,9 @@ from pixel_world.world import (
     WorldProject,
     canonical_json,
 )
+
+if TYPE_CHECKING:
+    from pixel_world.world_water import HydrologyDefinition
 
 
 def _file_table(files: dict[str, str]) -> str:
@@ -200,10 +204,19 @@ def write_world(
     (out / "README.md").write_text(_standalone_readme(params), encoding="utf-8")
 
 
-def create_project(out: Path, definition: WorldDefinition) -> WorldProject:
+def create_project(
+    out: Path, definition: WorldDefinition, *, hydrology: "HydrologyDefinition | None" = None
+) -> WorldProject:
     """Create project files without replacing an existing directory or its contents."""
     if not isinstance(definition, WorldDefinition):
         raise ValueError("definition must be a WorldDefinition")
+    if hydrology is not None:
+        from pixel_world.world_water import HydrologyDefinition
+
+        if not isinstance(hydrology, HydrologyDefinition):
+            raise ValueError("hydrology must be a HydrologyDefinition")
+        if hydrology.model != "none":
+            raise ValueError("enabled world export requires pending terrain conditioning")
     manifest = canonical_json({"world_id": definition.world_id, "definition": definition.to_dict()})
     coverage = canonical_json({"schema_version": 1, "world_id": definition.world_id, "areas": []})
     out.parent.mkdir(parents=True, exist_ok=True)
